@@ -1,10 +1,19 @@
 """图重构测试 — Command 路由 + 图结构，不触发真实 LLM"""
+import pytest
 from types import SimpleNamespace
 from langgraph.types import Command
 from langgraph.graph import END
 
 import graph.workflow as wf
 from state import make_initial_state
+
+
+@pytest.fixture(autouse=True)
+def _restore_agents():
+    snapshot = dict(wf._AGENTS)
+    yield
+    wf._AGENTS.clear()
+    wf._AGENTS.update(snapshot)
 
 
 class FakeAgent:

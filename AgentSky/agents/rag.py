@@ -73,4 +73,5 @@ def get_store() -> RagStore:
             print(f"  [RAG] 素材载入失败: {e}")
     print(f"  [RAG] 素材库就绪: {n}篇文档")
     _store = store
+    _store_loaded = True
     return _store

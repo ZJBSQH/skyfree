@@ -1,7 +1,6 @@
 """Agent RAG 注入测试 — 用 FakeStore/FakeModel 验证 prompt 注入，不触发真实 LLM"""
 from types import SimpleNamespace
 
-from agents.rag import RagStore
 from agents.writer import WriterAgent, SYSTEM_PROMPT as WP
 from agents.setting import SettingAgent, SYSTEM_PROMPT as STP
 from agents.character import CharacterAgent, SYSTEM_PROMPT as CP
