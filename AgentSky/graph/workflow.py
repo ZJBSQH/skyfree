@@ -17,6 +17,9 @@ from agents.rag import get_store
 
 _AGENTS = {}
 
+# supervisor 可路由到的合法下游节点；未知/意外值一律降级到 END
+VALID_NODES = {"setting", "character", "plot", "writer"}
+
 
 def _ensure_agents(model):
     """确保所有 Agent 已实例化并缓存"""
@@ -50,7 +53,7 @@ def supervisor_node(state: AgentSkyState) -> Command:
     """主编节点 — 解析需求，返回 Command 决定下一跳"""
     result = _AGENTS["supervisor"].invoke(state)
     target = result.pop("next_action", "finish")
-    goto = END if target == "finish" else target
+    goto = target if target in VALID_NODES else END
     print(f"  [Command] supervisor → {goto}")
     return Command(goto=goto, update=result)
 

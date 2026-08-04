@@ -36,6 +36,11 @@ def test_supervisor_node_finish_maps_to_end(monkeypatch):
     assert wf.supervisor_node({}).goto == END
 
 
+def test_supervisor_node_unknown_next_action_maps_to_end(monkeypatch):
+    wf._AGENTS["supervisor"] = FakeAgent({"next_action": "garbage", "phase": "done"})
+    assert wf.supervisor_node({}).goto == END
+
+
 def test_reviewer_node_passed_goes_end(monkeypatch):
     wf._AGENTS["reviewer"] = FakeAgent({"review_passed": True, "review_round": 1, "messages": []})
     assert wf.reviewer_node({"max_review_rounds": 3}).goto == END
