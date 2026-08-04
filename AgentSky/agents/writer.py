@@ -42,10 +42,11 @@ class WriterAgent(BaseAgent):
         review_issues = state.get("review_issues", [])
         current_draft = state.get("current_draft", "")
 
+        rag_materials = self._retrieve_rag(state)
         prompt = self._build_user_prompt(
             state["user_request"], plot_outline, characters,
             world_settings, foreshadowing_bank, completed,
-            review_issues, current_draft
+            review_issues, current_draft, rag_materials
         )
 
         is_revision = len(review_issues) > 0
@@ -78,8 +79,14 @@ class WriterAgent(BaseAgent):
     def _build_user_prompt(self, user_request: str, plot_outline: list,
                            characters: list, world_settings: list,
                            foreshadowing_bank: list, completed: list,
-                           review_issues: list, current_draft: str) -> str:
+                           review_issues: list, current_draft: str,
+                           rag_materials: list) -> str:
         parts = [f"## 故事需求\n{user_request}"]
+
+        if rag_materials:
+            parts.append("\n## 参考资料（向量检索）")
+            for i, m in enumerate(rag_materials, 1):
+                parts.append(f"{i}. {m['content'][:500]}")
 
         # 世界观摘要
         if world_settings:

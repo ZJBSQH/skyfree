@@ -50,7 +50,8 @@ class CharacterAgent(BaseAgent):
 
         task_context = state.get("task_context", "") or state.get("user_request", "")
 
-        prompt = self._build_user_prompt(task_context, existing, world_settings)
+        rag_materials = self._retrieve_rag(state)
+        prompt = self._build_user_prompt(task_context, existing, world_settings, rag_materials)
         self._log(f"现有人物{len(existing)}个，设定{len(world_settings)}条，准备设计人物...")
 
         result = self._call_llm_json(prompt)
@@ -67,8 +68,13 @@ class CharacterAgent(BaseAgent):
             "messages": [f"[CharacterAgent] 新增{len(new_chars)}个人物: {summary}"],
         }
 
-    def _build_user_prompt(self, task_context: str, existing: list, settings: list) -> str:
+    def _build_user_prompt(self, task_context: str, existing: list, settings: list, rag_materials: list) -> str:
         parts = [f"## 创作需求\n{task_context}"]
+
+        if rag_materials:
+            parts.append("\n## 参考资料（向量检索）")
+            for i, m in enumerate(rag_materials, 1):
+                parts.append(f"{i}. {m['content'][:500]}")
 
         if settings:
             parts.append("\n## 世界观设定（人物能力需遵守）")

@@ -18,10 +18,11 @@ class BaseAgent(ABC):
       - _retry_on_failure: 指数退避重试
     """
 
-    def __init__(self, model: ChatOpenAI, system_prompt: str, name: Optional[str] = None):
+    def __init__(self, model: ChatOpenAI, system_prompt: str, name: Optional[str] = None, store=None):
         self.model = model
         self.system_prompt = system_prompt
         self.name = name or self.__class__.__name__
+        self.store = store
 
     @abstractmethod
     def invoke(self, state: AgentSkyState) -> dict:
@@ -97,6 +98,15 @@ class BaseAgent(ABC):
                     return json.loads(text[start : i + 1])
 
         raise ValueError(f"Unmatched braces in response: {text[:200]}")
+
+    def _retrieve_rag(self, state, top_k: int = 3) -> list:
+        """用 user_request + task_context 检索写作资料；无 store 或无结果返回 []"""
+        if self.store is None:
+            return []
+        query = f"{state.get('user_request', '')} {state.get('task_context', '')}".strip()
+        if not query:
+            return []
+        return self.store.search(query, top_k=top_k)
 
     def _log(self, message: str):
         print(f"  [{self.name}] {message}")
