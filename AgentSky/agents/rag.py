@@ -61,7 +61,6 @@ def get_store() -> RagStore:
     global _store, _store_loaded
     if _store_loaded:
         return _store
-    _store_loaded = True
 
     folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "reference")
     store = RagStore()
