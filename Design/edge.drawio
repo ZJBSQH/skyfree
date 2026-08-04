@@ -1,0 +1,78 @@
+<mxfile host="Electron">
+  <diagram name="第 1 页" id="ZVE4pq47sM8EyhOMnFKb">
+    <mxGraphModel dx="629" dy="542" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-31" edge="1" parent="1" source="B56b2UmIhhnbC1p41Wfh-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="B56b2UmIhhnbC1p41Wfh-30" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="150" width="290" x="150" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="python agent" vertex="1">
+          <mxGeometry height="30" width="105" x="237.5" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-7" edge="1" parent="1" source="B56b2UmIhhnbC1p41Wfh-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="B56b2UmIhhnbC1p41Wfh-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-29" connectable="0" parent="B56b2UmIhhnbC1p41Wfh-7" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTP Rest" vertex="1">
+          <mxGeometry relative="1" x="0.208" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="前端:vue3" vertex="1">
+          <mxGeometry height="40" width="290" x="150" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-27" edge="1" parent="1" source="B56b2UmIhhnbC1p41Wfh-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="B56b2UmIhhnbC1p41Wfh-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="130" width="285" x="152.5" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="springboot" vertex="1">
+          <mxGeometry height="30" width="60" x="260" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="用户模块" vertex="1">
+          <mxGeometry height="40" width="50" x="190" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="灵感模块" vertex="1">
+          <mxGeometry height="40" width="55" x="255" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="创作模块" vertex="1">
+          <mxGeometry height="40" width="55" x="320" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="40" width="220" x="180" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="major agent" vertex="1">
+          <mxGeometry height="30" width="122.5" x="153.75" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-18" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="接受任务-拆解-分配子agent-汇总结果" vertex="1">
+          <mxGeometry height="20" width="210" x="180" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="大纲major" vertex="1">
+          <mxGeometry height="40" width="70" x="150" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="人物agent" vertex="1">
+          <mxGeometry height="40" width="70" x="220" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="世界观agent" vertex="1">
+          <mxGeometry height="40" width="70" x="290" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="写稿agent" vertex="1">
+          <mxGeometry height="40" width="70" x="360" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="系统边界" vertex="1">
+          <mxGeometry height="30" width="60" x="30" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-28" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Agent调用层,分装python的请求" vertex="1">
+          <mxGeometry height="30" width="240" x="180" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="B56b2UmIhhnbC1p41Wfh-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="LLM适配层" vertex="1">
+          <mxGeometry height="40" width="250" x="170" y="490" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

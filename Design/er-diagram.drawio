@@ -1,0 +1,366 @@
+<mxfile host="app.diagrams.net" modified="2026-07-15T00:00:00.000Z" agent="Claude" version="24.0.0">
+  <diagram id="er-diagram" name="ER Diagram - MultiAgent Scribe">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ==================== 连接线 (先画线, 后画表, 线在下方) ==================== -->
+
+        <!-- user → inspiration (1:N) -->
+        <mxCell id="rel_user_insp" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;" parent="1" source="entity_user" target="entity_inspiration" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- user → project (1:N) -->
+        <mxCell id="rel_user_proj" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;" parent="1" source="entity_user" target="entity_project" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- user → skill (1:N) -->
+        <mxCell id="rel_user_skill" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeWidth=2;" parent="1" source="entity_user" target="entity_skill" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- inspiration → project_inspiration (1:N) -->
+        <mxCell id="rel_insp_pi" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.5;exitY=1;entryX=0;entryY=0.5;strokeWidth=2;" parent="1" source="entity_inspiration" target="entity_proj_insp" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- project → project_inspiration (1:N) -->
+        <mxCell id="rel_proj_pi" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.5;exitY=1;entryX=1;entryY=0.5;strokeWidth=2;" parent="1" source="entity_project" target="entity_proj_insp" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- project → chapter (1:N) -->
+        <mxCell id="rel_proj_chap" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.25;exitY=1;entryX=0.25;entryY=0;strokeWidth=2;" parent="1" source="entity_project" target="entity_chapter" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- project → person (1:N) -->
+        <mxCell id="rel_proj_person" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.65;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;" parent="1" source="entity_project" target="entity_person" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- project → world_setting (1:N) -->
+        <mxCell id="rel_proj_ws" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.9;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;" parent="1" source="entity_project" target="entity_ws" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- project → skill (N:1, 选用风格) -->
+        <mxCell id="rel_proj_skill" value="选用风格" style="edgeStyle=entityRelationEdgeStyle;fontSize=11;html=1;endArrow=ERone;startArrow=ERzeroToMany;exitX=0;exitY=0.5;entryX=1;entryY=0.25;strokeWidth=1;dashed=1;labelBackgroundColor=#ffffff;" parent="1" source="entity_project" target="entity_skill" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- person → person_chapter (1:N) -->
+        <mxCell id="rel_person_pc" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.5;exitY=1;entryX=0;entryY=0.5;strokeWidth=2;" parent="1" source="entity_person" target="entity_pc" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- chapter → person_chapter (1:N) -->
+        <mxCell id="rel_chap_pc" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.5;exitY=1;entryX=1;entryY=0.5;strokeWidth=2;" parent="1" source="entity_chapter" target="entity_pc" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- world_setting → ws_chapter (1:N) -->
+        <mxCell id="rel_ws_wsc" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.5;exitY=1;entryX=0;entryY=0.5;strokeWidth=2;" parent="1" source="entity_ws" target="entity_wsc" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- chapter → ws_chapter (1:N) -->
+        <mxCell id="rel_chap_wsc" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;startArrow=ERone;exitX=0.75;exitY=1;entryX=1;entryY=0.5;strokeWidth=2;" parent="1" source="entity_chapter" target="entity_wsc" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- chapter 自引用 (parent_id → id) -->
+        <mxCell id="rel_chap_self" value="parent_id 自引用(树结构)" style="edgeStyle=entityRelationEdgeStyle;fontSize=10;html=1;endArrow=ERmany;startArrow=ERzeroToOne;exitX=0;exitY=0.75;entryX=0;entryY=0.25;strokeWidth=1;dashed=1;labelBackgroundColor=#ffffff;" parent="1" source="entity_chapter" target="entity_chapter" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-30" y="940"/>
+              <mxPoint x="-30" y="850"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== 实体表 ==================== -->
+
+        <!-- user -->
+        <mxCell id="entity_user" value="user (用户表)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="40" y="40" width="220" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_user" vertex="1">
+          <mxGeometry y="30" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_field2" value="  username VARCHAR(32) UNIQUE" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_user" vertex="1">
+          <mxGeometry y="52" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_field3" value="  password VARCHAR(128)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_user" vertex="1">
+          <mxGeometry y="74" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_field4" value="  nickname VARCHAR(32)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_user" vertex="1">
+          <mxGeometry y="96" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_field5" value="  avatar VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_user" vertex="1">
+          <mxGeometry y="118" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_field6" value="  create_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_user" vertex="1">
+          <mxGeometry y="140" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_field7" value="  update_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_user" vertex="1">
+          <mxGeometry y="160" width="220" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- skill -->
+        <mxCell id="entity_skill" value="skill (写作风格模板)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="400" y="40" width="220" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_skill" vertex="1">
+          <mxGeometry y="30" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field2" value="🔗 user_id BIGINT FK → user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_skill" vertex="1">
+          <mxGeometry y="52" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field3" value="  name VARCHAR(64)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_skill" vertex="1">
+          <mxGeometry y="74" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field4" value="  style_type VARCHAR(32)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_skill" vertex="1">
+          <mxGeometry y="96" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field5" value="  prompt_template TEXT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_skill" vertex="1">
+          <mxGeometry y="118" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field6" value="  description VARCHAR(256)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_skill" vertex="1">
+          <mxGeometry y="140" width="220" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field7" value="  is_system TINYINT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_skill" vertex="1">
+          <mxGeometry y="162" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="skill_field8" value="  create_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_skill" vertex="1">
+          <mxGeometry y="182" width="220" height="18" as="geometry"/>
+        </mxCell>
+
+        <!-- inspiration -->
+        <mxCell id="entity_inspiration" value="inspiration (灵感表)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="30" y="280" width="240" height="188" as="geometry"/>
+        </mxCell>
+        <mxCell id="insp_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_inspiration" vertex="1">
+          <mxGeometry y="30" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="insp_field2" value="🔗 user_id BIGINT FK → user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_inspiration" vertex="1">
+          <mxGeometry y="52" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="insp_field3" value="  title VARCHAR(128)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_inspiration" vertex="1">
+          <mxGeometry y="74" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="insp_field4" value="  content TEXT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_inspiration" vertex="1">
+          <mxGeometry y="96" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="insp_field5" value="  tag VARCHAR(64)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_inspiration" vertex="1">
+          <mxGeometry y="118" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="insp_field6" value="  status TINYINT (0碎片 1已展开)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_inspiration" vertex="1">
+          <mxGeometry y="140" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="insp_field7" value="  create_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_inspiration" vertex="1">
+          <mxGeometry y="162" width="240" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- project -->
+        <mxCell id="entity_project" value="project (创作项目表)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="350" y="280" width="240" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_project" vertex="1">
+          <mxGeometry y="30" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field2" value="🔗 user_id BIGINT FK → user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_project" vertex="1">
+          <mxGeometry y="52" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field3" value="  title VARCHAR(128)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_project" vertex="1">
+          <mxGeometry y="74" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field4" value="  genre VARCHAR(64)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_project" vertex="1">
+          <mxGeometry y="96" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field5" value="🔗 style_skill_id BIGINT FK → skill" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_project" vertex="1">
+          <mxGeometry y="118" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field6" value="  premise TEXT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_project" vertex="1">
+          <mxGeometry y="140" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field7" value="  status TINYINT (0构思 1连载 2完结)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_project" vertex="1">
+          <mxGeometry y="162" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="proj_field8" value="  create/update_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_project" vertex="1">
+          <mxGeometry y="184" width="240" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- project_inspiration (中间表) -->
+        <mxCell id="entity_proj_insp" value="project_inspiration (N:M)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="160" y="540" width="240" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_proj_insp" vertex="1">
+          <mxGeometry y="30" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi_field2" value="🔗 project_id BIGINT FK → project" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_proj_insp" vertex="1">
+          <mxGeometry y="52" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi_field3" value="🔗 inspiration_id BIGINT FK → inspiration" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_proj_insp" vertex="1">
+          <mxGeometry y="74" width="240" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- chapter -->
+        <mxCell id="entity_chapter" value="chapter (章节表, 自引用树)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="30" y="700" width="260" height="290" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="30" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field2" value="🔗 project_id BIGINT FK → project" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="52" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field3" value="🔗 parent_id BIGINT FK → chapter(id) 自引用" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="74" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field4" value="  sort_order INT (同级排序)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="96" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field5" value="  title VARCHAR(128) (第1章 血月之夜)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="118" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field6" value="  node_type TINYINT (0=卷 1=章)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="140" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field7" value="  summary VARCHAR(512) (章节摘要)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="162" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field8" value="  content LONGTEXT (正文,卷节点为NULL)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="184" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field9" value="  word_count INT (字数)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="206" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field10" value="  status TINYINT (0草稿 1已完成)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="228" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field11" value="  create_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="250" width="260" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="chap_field12" value="  update_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_chapter" vertex="1">
+          <mxGeometry y="270" width="260" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- person -->
+        <mxCell id="entity_person" value="person (人物表)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="420" y="700" width="230" height="188" as="geometry"/>
+        </mxCell>
+        <mxCell id="person_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_person" vertex="1">
+          <mxGeometry y="30" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="person_field2" value="🔗 project_id BIGINT FK → project" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_person" vertex="1">
+          <mxGeometry y="52" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="person_field3" value="  name VARCHAR(64)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_person" vertex="1">
+          <mxGeometry y="74" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="person_field4" value="  role VARCHAR(32) (主角/反派/配角)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_person" vertex="1">
+          <mxGeometry y="96" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="person_field5" value="  description TEXT (外貌/性格/背景)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_person" vertex="1">
+          <mxGeometry y="118" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="person_field6" value="  avatar_url VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_person" vertex="1">
+          <mxGeometry y="140" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="person_field7" value="  create_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_person" vertex="1">
+          <mxGeometry y="162" width="230" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- world_setting -->
+        <mxCell id="entity_ws" value="world_setting (世界观表)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="710" y="700" width="240" height="188" as="geometry"/>
+        </mxCell>
+        <mxCell id="ws_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_ws" vertex="1">
+          <mxGeometry y="30" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="ws_field2" value="🔗 project_id BIGINT FK → project" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_ws" vertex="1">
+          <mxGeometry y="52" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="ws_field3" value="  category VARCHAR(64) (修炼/势力/地理)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_ws" vertex="1">
+          <mxGeometry y="74" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="ws_field4" value="  name VARCHAR(128)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_ws" vertex="1">
+          <mxGeometry y="96" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="ws_field5" value="  description TEXT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_ws" vertex="1">
+          <mxGeometry y="118" width="240" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="ws_field6" value="  create_time DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="entity_ws" vertex="1">
+          <mxGeometry y="140" width="240" height="22" as="geometry"/>
+        </mxCell>
+
+        <!-- person_chapter -->
+        <mxCell id="entity_pc" value="person_chapter (N:M中间表)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="410" y="940" width="230" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="pc_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_pc" vertex="1">
+          <mxGeometry y="30" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="pc_field2" value="🔗 person_id BIGINT FK → person" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_pc" vertex="1">
+          <mxGeometry y="52" width="230" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="pc_field3" value="🔗 chapter_id BIGINT FK → chapter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_pc" vertex="1">
+          <mxGeometry y="74" width="230" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- world_setting_chapter -->
+        <mxCell id="entity_wsc" value="world_setting_chapter (N:M中间表)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="700" y="940" width="260" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="wsc_field1" value="🔑 id BIGINT PK" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;" parent="entity_wsc" vertex="1">
+          <mxGeometry y="30" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="wsc_field2" value="🔗 setting_id BIGINT FK → world_setting" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_wsc" vertex="1">
+          <mxGeometry y="52" width="260" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="wsc_field3" value="🔗 chapter_id BIGINT FK → chapter" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;fillColor=#ffe6cc;" parent="entity_wsc" vertex="1">
+          <mxGeometry y="74" width="260" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- ==================== 图例 ==================== -->
+        <mxCell id="legend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="720" y="40" width="240" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_title" value="图例" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="730" y="45" width="100" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_pk" value="🔑 PK = 主键" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="730" y="70" width="200" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_fk" value="🔗 FK = 外键" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="730" y="88" width="200" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_fk_color" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="735" y="110" width="20" height="16" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_fk_text" value="橙色底色 = 外键字段" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="758" y="108" width="120" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_junction" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="735" y="130" width="20" height="16" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_junction_text" value="黄色底色 = N:M中间表" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="758" y="128" width="150" height="18" as="geometry"/>
+        </mxCell>
+
+        <!-- ==================== 模块标注 (虚线框) ==================== -->
+        <mxCell id="zone_main" value="核心业务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#b85450;strokeWidth=2;dashed=1;verticalAlign=top;align=left;fontSize=11;fontColor=#b85450;" parent="1" vertex="1">
+          <mxGeometry x="15" y="255" width="610" height="510" as="geometry"/>
+        </mxCell>
+        <mxCell id="zone_creative" value="创作蓝图" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9673a6;strokeWidth=2;dashed=1;verticalAlign=top;align=left;fontSize=11;fontColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="15" y="670" width="970" height="400" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentSky - 多Agent写作助手</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --border:#334155; --accent:#38bdf8; --text:#e2e8f0; --muted:#94a3b8; --green:#4ade80; --red:#f87171; --yellow:#fbbf24; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  .app { max-width:1100px; margin:0 auto; padding:24px; }
+  header { text-align:center; padding:32px 0 24px; }
+  header h1 { font-size:28px; letter-spacing:-0.5px; }
+  header h1 span { color:var(--accent); }
+  header p { color:var(--muted); margin-top:6px; font-size:14px; }
+
+  .input-area { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:20px; }
+  .input-area label { display:block; font-size:14px; color:var(--muted); margin-bottom:8px; }
+  .input-area textarea { width:100%; height:100px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:12px; font-size:15px; resize:vertical; font-family:inherit; }
+  .input-area textarea:focus { outline:none; border-color:var(--accent); }
+  .btn-row { display:flex; gap:10px; margin-top:12px; }
+  .btn { padding:10px 24px; border:none; border-radius:8px; font-size:15px; cursor:pointer; font-weight:600; transition:all .15s; }
+  .btn-primary { background:var(--accent); color:#0f172a; }
+  .btn-primary:hover { filter:brightness(1.1); }
+  .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-outline:hover { border-color:var(--accent); }
+
+  .status { padding:12px 16px; border-radius:8px; margin-bottom:20px; font-size:14px; display:none; }
+  .status.running { display:block; background:#1e3a5f; border:1px solid var(--accent); color:var(--accent); }
+  .status.error { display:block; background:#3f1e1e; border:1px solid var(--red); color:var(--red); }
+
+  .results { display:none; }
+  .results.show { display:block; }
+
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; margin-bottom:16px; overflow:hidden; }
+  .card-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; }
+  .card-header h3 { font-size:15px; display:flex; align-items:center; gap:8px; }
+  .card-header .badge { font-size:12px; padding:2px 10px; border-radius:12px; background:var(--accent); color:#0f172a; font-weight:600; }
+  .card-header .arrow { transition:transform .2s; color:var(--muted); }
+  .card.open .card-header .arrow { transform:rotate(90deg); }
+  .card-body { padding:16px 20px; display:none; }
+  .card.open .card-body { display:block; }
+
+  .setting-item { padding:10px 0; border-bottom:1px solid var(--border); }
+  .setting-item:last-child { border-bottom:none; }
+  .setting-item .cat { font-size:11px; text-transform:uppercase; color:var(--accent); letter-spacing:1px; }
+  .setting-item .key { font-weight:600; margin:4px 0; }
+  .setting-item .content { color:var(--muted); font-size:14px; line-height:1.6; }
+
+  .char-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+  .char-card { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px; }
+  .char-card .name { font-size:16px; font-weight:700; }
+  .char-card .role { font-size:12px; color:var(--accent); margin-left:8px; }
+  .char-card .field { margin-top:8px; font-size:13px; }
+  .char-card .field strong { color:var(--muted); display:inline-block; width:42px; }
+
+  .plot-list { }
+  .plot-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); align-items:flex-start; }
+  .plot-item:last-child { border-bottom:none; }
+  .plot-item .ch-id { font-size:12px; color:var(--accent); font-weight:700; min-width:42px; padding-top:2px; }
+  .plot-item .ch-body { flex:1; }
+  .plot-item .ch-title { font-weight:600; font-size:14px; }
+  .plot-item .ch-summary { color:var(--muted); font-size:13px; margin-top:2px; }
+  .plot-item .ch-meta { font-size:11px; color:var(--yellow); margin-top:4px; }
+
+  .draft-box { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:20px; max-height:500px; overflow-y:auto; line-height:1.9; font-size:15px; white-space:pre-wrap; }
+
+  .review-item { padding:10px 14px; margin:6px 0; border-radius:6px; font-size:13px; }
+  .review-item.critical { background:#3f1e1e; border-left:3px solid var(--red); }
+  .review-item.major { background:#3f2e1e; border-left:3px solid var(--yellow); }
+  .review-item.minor { background:#1e2e3f; border-left:3px solid var(--accent); }
+
+  .log-box { background:#000; color:#4ade80; padding:12px 16px; border-radius:8px; font-family:'Cascadia Code','Fira Code',monospace; font-size:12px; max-height:200px; overflow-y:auto; white-space:pre-wrap; line-height:1.7; }
+
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--accent); border-top-color:transparent; border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-right:8px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .summary-bar { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .summary-item { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 20px; text-align:center; min-width:100px; }
+  .summary-item .num { font-size:24px; font-weight:700; color:var(--accent); }
+  .summary-item .label { font-size:12px; color:var(--muted); margin-top:4px; }
+  .summary-item.pass { border-color:var(--green); }
+  .summary-item.pass .num { color:var(--green); }
+  .summary-item.fail { border-color:var(--red); }
+  .summary-item.fail .num { color:var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1><span>AgentSky</span> 多Agent写作助手</h1>
+    <p>Supervisor + Setting + Character + Plot + Writer + Reviewer</p>
+  </header>
+
+  <div class="input-area">
+    <label for="idea">输入故事灵感</label>
+    <textarea id="idea" placeholder="例如：一个被宗门视为废物的少年，意外觉醒了'仇恨值系统'，别人越恨他他越强...">一个普通的高中生在放学路上救下一只黑猫，没想到黑猫是异世界的守护神，他被卷入了一场神明之间的战争。他必须在七个不同的异世界中收集神器碎片，每个世界都有独特的法则和势力。</textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnStart" onclick="startCreate()">开始创作</button>
+      <button class="btn btn-outline" id="btnClear" onclick="clearResults()">清空</button>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="results" id="results">
+    <!-- 概览 -->
+    <div class="summary-bar" id="summary"></div>
+
+    <!-- 设定库 -->
+    <div class="card" id="cardSettings">
+      <div class="card-header" onclick="toggleCard('cardSettings')">
+        <h3>世界观设定 <span class="badge" id="badgeSettings">0</span></h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="card-body" id="bodySettings"></div>
+    </div>
+
+    <!-- 人物卡 -->
+    <div class="card" id="cardCharacters">
+      <div class="card-header" onclick="toggleCard('cardCharacters')">
+        <h3>人物卡 <span class="badge" id="badgeCharacters">0</span></h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="card-body" id="bodyCharacters"></div>
+    </div>
+
+    <!-- 大纲 -->
+    <div class="card" id="cardPlot">
+      <div class="card-header" onclick="toggleCard('cardPlot')">
+        <h3>剧情大纲 <span class="badge" id="badgePlot">0</span></h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="card-body" id="bodyPlot"></div>
+    </div>
+
+    <!-- 正文 -->
+    <div class="card open" id="cardDraft">
+      <div class="card-header" onclick="toggleCard('cardDraft')">
+        <h3>正文草稿 <span class="badge" id="badgeDraft">0字</span></h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="card-body" id="bodyDraft"></div>
+    </div>
+
+    <!-- 审核 -->
+    <div class="card" id="cardReview">
+      <div class="card-header" onclick="toggleCard('cardReview')">
+        <h3>审核报告</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="card-body" id="bodyReview"></div>
+    </div>
+
+    <!-- 日志 -->
+    <div class="card" id="cardLogs">
+      <div class="card-header" onclick="toggleCard('cardLogs')">
+        <h3>Agent 运行日志</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="card-body"><div class="log-box" id="bodyLogs"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.className = 'status ' + (type || '');
+  el.style.display = 'block';
+  el.innerHTML = type==='running' ? '<span class="spinner"></span>' + msg : msg;
+}
+
+function hideStatus() {
+  document.getElementById('status').style.display = 'none';
+}
+
+function clearResults() {
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('idea').value = '';
+  hideStatus();
+}
+
+async function startCreate() {
+  const idea = document.getElementById('idea').value.trim();
+  if (!idea) return alert('请输入故事灵感');
+
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('results').classList.remove('show');
+  setStatus('Agent 工作中... 预计 60-120 秒', 'running');
+
+  try {
+    const resp = await fetch('/api/create', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({idea})
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      renderResult(data.result);
+      document.getElementById('results').classList.add('show');
+      hideStatus();
+    } else {
+      setStatus('Error: ' + (data.error || 'Unknown error'), 'error');
+      if (data.logs) document.getElementById('bodyLogs').textContent = data.logs.join('\n');
+      document.getElementById('cardLogs').classList.add('open');
+      document.getElementById('results').classList.add('show');
+    }
+  } catch (err) {
+    setStatus('Network Error: ' + err.message + ' (server running?)', 'error');
+  }
+
+  document.getElementById('btnStart').disabled = false;
+}
+
+function renderResult(r) {
+  // 概览
+  const passClass = r.review_passed ? 'pass' : 'fail';
+  const passText = r.review_passed ? 'PASS' : 'ISSUES';
+  document.getElementById('summary').innerHTML =
+    `<div class="summary-item"><div class="num">${r.settings_count}</div><div class="label">设定条目</div></div>
+     <div class="summary-item"><div class="num">${r.characters_count}</div><div class="label">人物卡</div></div>
+     <div class="summary-item"><div class="num">${r.plot_count}</div><div class="label">大纲章节</div></div>
+     <div class="summary-item"><div class="num">${r.draft_length}</div><div class="label">正文字数</div></div>
+     <div class="summary-item ${passClass}"><div class="num">${passText}</div><div class="label">审核(r${r.review_round})</div></div>`;
+
+  // 设定
+  document.getElementById('badgeSettings').textContent = r.settings_count;
+  document.getElementById('bodySettings').innerHTML = (r.world_settings||[]).map(s =>
+    `<div class="setting-item">
+      <div class="cat">[${s.category||''}]</div>
+      <div class="key">${esc(s.key||'')}</div>
+      <div class="content">${esc(s.content||'')}</div>
+    </div>`
+  ).join('') || '<p style="color:var(--muted)">无设定数据</p>';
+
+  // 人物
+  document.getElementById('badgeCharacters').textContent = r.characters_count;
+  document.getElementById('bodyCharacters').innerHTML =
+    `<div class="char-grid">${(r.characters||[]).map(c =>
+      `<div class="char-card">
+        <span class="name">${esc(c.name||'')}</span><span class="role">${esc(c.role_type||'')}</span>
+        <div class="field"><strong>外貌</strong> ${esc(c.appearance||'')}</div>
+        <div class="field"><strong>性格</strong> ${esc(c.personality||'')}</div>
+        <div class="field"><strong>背景</strong> ${esc(c.background||'')}</div>
+        <div class="field"><strong>能力</strong> ${esc(c.ability||'')}</div>
+        <div class="field"><strong>动机</strong> ${esc(c.motivation||'')}</div>
+        ${c.arc_summary ? `<div class="field"><strong>弧光</strong> ${esc(c.arc_summary)}</div>` : ''}
+      </div>`
+    ).join('')}</div>` || '<p style="color:var(--muted)">无人物数据</p>';
+
+  // 大纲
+  document.getElementById('badgePlot').textContent = r.plot_count;
+  document.getElementById('bodyPlot').innerHTML =
+    `<div class="plot-list">${(r.plot_outline||[]).map(p =>
+      `<div class="plot-item">
+        <div class="ch-id">${esc(p.id||'')}</div>
+        <div class="ch-body">
+          <div class="ch-title">${esc(p.title||'')}</div>
+          <div class="ch-summary">${esc(p.summary||'')}</div>
+          <div class="ch-meta">${esc(p.tension_level||'')} | 出场: ${(p.characters_involved||[]).join(', ')}</div>
+        </div>
+      </div>`
+    ).join('')}</div>` || '<p style="color:var(--muted)">无大纲数据</p>';
+
+  // 正文
+  document.getElementById('badgeDraft').textContent = r.draft_length + '字';
+  document.getElementById('bodyDraft').innerHTML = `<div class="draft-box">${esc(r.current_draft||'无正文')}</div>`;
+
+  // 审核
+  const issues = r.review_issues || [];
+  document.getElementById('bodyReview').innerHTML = r.review_passed
+    ? '<p style="color:var(--green)">PASS - 审核通过，无问题</p>'
+    : issues.map(i =>
+        `<div class="review-item ${i.severity||'minor'}">
+          <strong>[${i.severity}] ${i.category}</strong> &rarr; ${i.target_agent}<br>
+          ${esc(i.description||'')}<br>
+          <span style="color:var(--accent)">Suggestion: ${esc(i.suggestion||'')}</span>
+        </div>`
+      ).join('');
+  document.getElementById('cardReview').classList.toggle('open', issues.length > 0);
+  document.getElementById('cardDraft').classList.toggle('open', true);
+
+  // 日志
+  document.getElementById('bodyLogs').textContent = (data_logs||[]).join('\n') || '';
+}
+
+let data_logs = [];
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 保存 logs 到全局
+const origFetch = fetch;
+fetch = async function(url, opts) {
+  const resp = await origFetch(url, opts);
+  const clone = resp.clone();
+  try {
+    const json = await clone.json();
+    if (json.logs) data_logs = json.logs;
+  } catch(e) {}
+  return resp;
+};
+</script>
+</body>
+</html>
