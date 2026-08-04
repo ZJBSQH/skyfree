@@ -146,6 +146,9 @@ def create_workflow(model=None):
 # ═══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+    import sys
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     from llm.config import reset_tracker, get_tracker
     reset_tracker()
 
