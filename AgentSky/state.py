@@ -57,9 +57,7 @@ class AgentSkyState(TypedDict):
 
     # Supervisor 控制
     phase: str
-    next_action: str
     task_context: str
-    task_queue: list[str]
     supervisor_log: Annotated[list[str], add_messages]
 
     # 设定库
@@ -95,9 +93,7 @@ def make_initial_state(user_request: str) -> AgentSkyState:
     return AgentSkyState(
         user_request=user_request,
         phase="init",
-        next_action="",
         task_context="",
-        task_queue=[],
         supervisor_log=[],
         world_settings=[],
         characters=[],

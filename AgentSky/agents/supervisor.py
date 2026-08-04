@@ -14,11 +14,11 @@ SYSTEM_PROMPT = """你是一位资深小说项目主编，负责统筹整个创�
 5. 审核调度：收到审核Agent的修改意见后，决定由哪个Agent返工
 
 ## 路由规则（next_action取值）
-- "setting_agent"  — 缺少世界观/势力/规则设定，派给设定师
-- "character_agent" — 缺少人物卡/人物关系，派给人物设计师
-- "plot_agent"      — 缺少大纲/主线支线/伏笔，派给剧情策划
-- "writer_agent"    — 蓝图（设定+人物+大纲）齐备，派给写手
-- "finish"          — 全部完成，结束流程
+- "setting"   — 缺少世界观/势力/规则设定，派给设定师
+- "character" — 缺少人物卡/人物关系，派给人物设计师
+- "plot"      — 缺少大纲/主线支线/伏笔，派给剧情策划
+- "writer"    — 蓝图（设定+人物+大纲）齐备，派给写手
+- "finish"    — 全部完成，结束流程
 
 ### 首次启动
 当 phase="init" 时，分析用户需求，判断需要哪些蓝图：
@@ -32,7 +32,7 @@ SYSTEM_PROMPT = """你是一位资深小说项目主编，负责统筹整个创�
 - world_settings 是否够用？
 - characters 是否覆盖了所有必要角色？
 - plot_outline 是否有足够的章节规划？
-- 全部齐备 → 路由到 writer_agent
+- 全部齐备 → 路由到 writer
 
 ### 审核修改循环
 当 phase="review" 且有 review_issues 时：
@@ -44,7 +44,7 @@ SYSTEM_PROMPT = """你是一位资深小说项目主编，负责统筹整个创�
 ## 输出格式（严格JSON，不要markdown代码块）
 {
   "analysis": "对当前状态的简要分析",
-  "next_action": "setting_agent|character_agent|plot_agent|writer_agent|finish",
+  "next_action": "setting|character|plot|writer|finish",
   "task_context": "传递给目标Agent的具体创作指令，包含用户需求要点",
   "reason": "做出此路由决策的原因"
 }
@@ -95,7 +95,6 @@ class SupervisorAgent(BaseAgent):
                 "phase": "done",
                 "next_action": "finish",
                 "task_context": "",
-                "task_queue": [],
                 "supervisor_log": [f"[Supervisor] 全部{completed_count}章完成，结束"],
             }
 
@@ -106,9 +105,8 @@ class SupervisorAgent(BaseAgent):
         self._log(f"蓝图齐备 → 路由到 writer (第{chapter_num}章)")
         return {
             "phase": "writing",
-            "next_action": "writer_agent",
+            "next_action": "writer",
             "task_context": task_context,
-            "task_queue": ["writer_agent"],
             "supervisor_log": [f"[Supervisor] 蓝图齐备，路由到 writer (第{chapter_num}/{plot_count}章)"],
         }
 
@@ -129,7 +127,7 @@ class SupervisorAgent(BaseAgent):
         analysis = result.get("analysis", "")
 
         new_phase = phase
-        if next_action == "writer_agent":
+        if next_action == "writer":
             new_phase = "writing"
         elif next_action == "finish":
             new_phase = "done"
@@ -141,7 +139,6 @@ class SupervisorAgent(BaseAgent):
             "phase": new_phase,
             "next_action": next_action,
             "task_context": task_context,
-            "task_queue": [next_action] if next_action != "finish" else [],
             "supervisor_log": [f"[Supervisor] {analysis} -> {next_action}"],
         }
 
@@ -167,9 +164,7 @@ class SupervisorAgent(BaseAgent):
 
         # critical 或 major → 路由到对应 agent 修复
         if actionable:
-            target = actionable[0].get("target_agent", "writer")
-            action_map = {"setting": "setting_agent", "character": "character_agent", "plot": "plot_agent", "writer": "writer_agent"}
-            next_action = action_map.get(target, "writer_agent")
+            next_action = actionable[0].get("target_agent", "writer")
             sev = actionable[0].get("severity", "?")
             desc = actionable[0].get("description", "")
             suggestion = actionable[0].get("suggestion", "")
@@ -187,7 +182,7 @@ class SupervisorAgent(BaseAgent):
             print(f"  [Supervisor] 仅有{len(minors)}个minor问题 → writer微调")
             return {
                 "phase": "review",
-                "next_action": "writer_agent",
+                "next_action": "writer",
                 "task_context": f"微调: {minors[0].get('description', '')}",
                 "supervisor_log": [f"[Supervisor] 仅有minor问题，writer微调"],
             }

@@ -1,15 +1,17 @@
 """LangGraph 多Agent编排工作流 — Supervisor 调度 + 审核闭环
 
-图结构:
-    START → supervisor ──(条件边)──→ setting / character / plot / writer / END
+图结构 (全部固定边，路由由节点返回的 Command 决定):
+    START → supervisor → setting / character / plot / writer / END
     setting / character / plot → supervisor (固定边，汇报)
     writer → reviewer (固定边，写完必审)
-    reviewer ──(条件边)──→ supervisor (未通过) / END (通过)
+    reviewer → supervisor (未通过) / END (通过)
 """
 
 from langgraph.graph import StateGraph, START, END
+from langgraph.types import Command
 from state import AgentSkyState, make_initial_state
 from llm.config import get_model
+from agents.rag import get_store
 
 # ── Agent 实例（懒加载，由 create_workflow 创建）──
 
@@ -21,6 +23,8 @@ def _ensure_agents(model):
     if _AGENTS:
         return _AGENTS
 
+    store = get_store()
+
     from agents.supervisor import SupervisorAgent, SYSTEM_PROMPT as SP
     from agents.setting import SettingAgent, SYSTEM_PROMPT as STP
     from agents.character import CharacterAgent, SYSTEM_PROMPT as CP
@@ -29,10 +33,10 @@ def _ensure_agents(model):
     from agents.reviewer import ReviewerAgent, SYSTEM_PROMPT as RP
 
     _AGENTS["supervisor"] = SupervisorAgent(model, SP)
-    _AGENTS["setting"] = SettingAgent(model, STP)
-    _AGENTS["character"] = CharacterAgent(model, CP)
-    _AGENTS["plot"] = PlotAgent(model, PP)
-    _AGENTS["writer"] = WriterAgent(model, WP)
+    _AGENTS["setting"] = SettingAgent(model, STP, store=store)
+    _AGENTS["character"] = CharacterAgent(model, CP, store=store)
+    _AGENTS["plot"] = PlotAgent(model, PP, store=store)
+    _AGENTS["writer"] = WriterAgent(model, WP, store=store)
     _AGENTS["reviewer"] = ReviewerAgent(model, RP)
 
     return _AGENTS
@@ -42,10 +46,13 @@ def _ensure_agents(model):
 # 节点函数 — 每个 Agent 对应一个图节点
 # ═══════════════════════════════════════════════════════════════
 
-def supervisor_node(state: AgentSkyState) -> dict:
-    """主编节点 — 解析需求，决策路由"""
-    agent = _AGENTS["supervisor"]
-    return agent.invoke(state)
+def supervisor_node(state: AgentSkyState) -> Command:
+    """主编节点 — 解析需求，返回 Command 决定下一跳"""
+    result = _AGENTS["supervisor"].invoke(state)
+    target = result.pop("next_action", "finish")
+    goto = END if target == "finish" else target
+    print(f"  [Command] supervisor → {goto}")
+    return Command(goto=goto, update=result)
 
 
 def setting_node(state: AgentSkyState) -> dict:
@@ -72,56 +79,15 @@ def writer_node(state: AgentSkyState) -> dict:
     return agent.invoke(state)
 
 
-def reviewer_node(state: AgentSkyState) -> dict:
-    """审核节点 — 五维审核正文"""
-    agent = _AGENTS["reviewer"]
-    return agent.invoke(state)
-
-
-# ═══════════════════════════════════════════════════════════════
-# 条件路由函数
-# ═══════════════════════════════════════════════════════════════
-
-def route_supervisor(state: AgentSkyState) -> str:
-    """Supervisor 的条件边：根据 next_action 决定跳转目标
-
-    返回值必须是已注册的节点名或 END
-    """
-    next_action = state.get("next_action", "finish")
-
-    routing_map = {
-        "setting_agent": "setting",
-        "character_agent": "character",
-        "plot_agent": "plot",
-        "writer_agent": "writer",
-        "finish": END,
-    }
-
-    target = routing_map.get(next_action, END)
-    print(f"  [Router] supervisor → {target} (next_action={next_action})")
-    return target
-
-
-def route_reviewer(state: AgentSkyState) -> str:
-    """Reviewer 的条件边：通过→END，未通过→回 Supervisor 修正
-
-    防死循环：超过 max_review_rounds 强制结束
-    """
-    review_passed = state.get("review_passed", False)
-    review_round = state.get("review_round", 0)
+def reviewer_node(state: AgentSkyState) -> Command:
+    """审核节点 — 通过/超轮次→END，否则回 supervisor"""
+    result = _AGENTS["reviewer"].invoke(state)
+    passed = result.get("review_passed", False)
+    review_round = result.get("review_round", 0)
     max_rounds = state.get("max_review_rounds", 3)
-
-    if review_passed:
-        print(f"  [Router] reviewer → END (审核通过, 第{review_round}轮)")
-        return END
-
-    if review_round >= max_rounds:
-        print(f"  [Router] reviewer → END (已达最大轮次{max_rounds}, 强制结束)")
-        return END
-
-    issues = state.get("review_issues", [])
-    print(f"  [Router] reviewer → supervisor (未通过, 问题数={len(issues)}, 轮次={review_round})")
-    return "supervisor"
+    goto = END if (passed or review_round >= max_rounds) else "supervisor"
+    print(f"  [Command] reviewer → {goto} (passed={passed}, round={review_round})")
+    return Command(goto=goto, update=result)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -139,12 +105,10 @@ def create_workflow(model=None):
         writer     — 正文写手
         reviewer   — 审核专家
 
-    边:
-        固定边: START → supervisor
-                setting/character/plot → supervisor
-                writer → reviewer
-        条件边: supervisor → setting|character|plot|writer|END
-                reviewer → supervisor(未通过)|END(通过)
+    边 (全部固定边，路由由节点返回的 Command 决定):
+        START → supervisor
+        setting/character/plot → supervisor
+        writer → reviewer
 
     Returns:
         编译后的 LangGraph StateGraph
@@ -170,28 +134,6 @@ def create_workflow(model=None):
     builder.add_edge("character", "supervisor")
     builder.add_edge("plot", "supervisor")
     builder.add_edge("writer", "reviewer")
-
-    # 条件边
-    builder.add_conditional_edges(
-        "supervisor",
-        route_supervisor,
-        {
-            "setting": "setting",
-            "character": "character",
-            "plot": "plot",
-            "writer": "writer",
-            END: END,
-        }
-    )
-
-    builder.add_conditional_edges(
-        "reviewer",
-        route_reviewer,
-        {
-            "supervisor": "supervisor",
-            END: END,
-        }
-    )
 
     return builder.compile()
 
