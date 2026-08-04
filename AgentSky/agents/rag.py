@@ -1,31 +1,48 @@
-"""标准 RAG 节点 — FAISS 向量检索 + LLM 生成"""
+"""写作资料向量库 — FAISS 检索，供 writer/setting/character/plot 检索参考素材"""
 
-import numpy as np
-from sentence_transformers import SentenceTransformer
-import faiss
-from langchain_core.messages import SystemMessage, HumanMessage
+import os
+from pathlib import Path
+
+try:
+    import numpy as np
+    import faiss
+    from sentence_transformers import SentenceTransformer
+    _EMBED_AVAILABLE = True
+except ImportError:
+    _EMBED_AVAILABLE = False
+    np = None
 
 
 class RagStore:
-    """向量存储与检索"""
+    """向量存储与检索：每个 .txt 文件作为一条文档"""
 
     def __init__(self, embed_model: str = "all-MiniLM-L6-v2"):
-        self.embedder = SentenceTransformer(embed_model)
-        self.index = None
         self.docs: list[str] = []
+        self.index = None
+        self.embedder = None
+        if _EMBED_AVAILABLE:
+            try:
+                self.embedder = SentenceTransformer(embed_model)
+            except Exception as e:
+                print(f"  [RAG] 加载嵌入模型失败: {e}")
 
     def ingest(self, documents: list[str]):
-        """导入文档构建 FAISS 索引"""
         self.docs = list(documents)
-        if not self.docs:
+        if not self.docs or self.embedder is None:
             return
         vecs = self.embedder.encode(self.docs, normalize_embeddings=True)
         self.index = faiss.IndexFlatIP(vecs.shape[1])
-        self.index.add(vecs.astype(np.float32))
+        self.index.add(np.asarray(vecs, dtype=np.float32))
+
+    def ingest_from_folder(self, folder: str) -> int:
+        docs = []
+        for path in sorted(Path(folder).glob("*.txt")):
+            docs.append(path.read_text(encoding="utf-8"))
+        self.ingest(docs)
+        return len(docs)
 
     def search(self, query: str, top_k: int = 3) -> list[dict]:
-        """检索 top_k 最相关文档"""
-        if self.index is None or not self.docs:
+        if self.index is None or not self.docs or self.embedder is None:
             return []
         q = self.embedder.encode([query], normalize_embeddings=True).astype(np.float32)
         scores, idxs = self.index.search(q, min(top_k, len(self.docs)))
@@ -35,33 +52,25 @@ class RagStore:
         ]
 
 
-SYSTEM_PROMPT = "根据参考资料回答问题。资料不足时据实说明，不要编造。"
+_store = None
+_store_loaded = False
 
 
-class RagAgent:
-    """RAG 节点：检索 + 增强生成"""
+def get_store() -> RagStore:
+    """模块级单例 — 首次调用从 data/reference/ 载入素材；失败则返回空 store"""
+    global _store, _store_loaded
+    if _store_loaded:
+        return _store
+    _store_loaded = True
 
-    def __init__(self, model, store: RagStore):
-        self.model = model
-        self.store = store
-
-    def invoke(self, state: dict) -> dict:
-        query = state.get("rag_query", "")
-        if not query:
-            return {"rag_context": "", "rag_answer": "", "messages": []}
-
-        results = self.store.search(query, top_k=3)
-        context = "\n\n---\n\n".join(r["content"] for r in results)
-
-        prompt = f"参考资料:\n{context}\n\n问题: {query}" if context else query
-        resp = self.model.invoke([
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=prompt),
-        ])
-
-        return {
-            "rag_context": context,
-            "rag_answer": resp.content,
-            "rag_sources": [r["content"][:200] for r in results],
-            "messages": [f"[RagAgent] 检索{len(results)}篇 → 生成{len(resp.content)}字"],
-        }
+    folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "reference")
+    store = RagStore()
+    n = 0
+    if os.path.isdir(folder):
+        try:
+            n = store.ingest_from_folder(folder)
+        except Exception as e:
+            print(f"  [RAG] 素材载入失败: {e}")
+    print(f"  [RAG] 素材库就绪: {n}篇文档")
+    _store = store
+    return _store
