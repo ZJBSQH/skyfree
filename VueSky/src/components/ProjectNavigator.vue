@@ -32,6 +32,19 @@ function select(candidate: ContentSelection) {
   selection.value = candidate
   emit('select', candidate)
 }
+
+function itemLabel(item: unknown, fallback: string) {
+  if (typeof item === 'string') return item
+  if (typeof item === 'number') return String(item)
+  if (item && typeof item === 'object') {
+    const label = (item as Record<string, unknown>).name
+      ?? (item as Record<string, unknown>).title
+      ?? (item as Record<string, unknown>).label
+    if (typeof label === 'string') return label
+  }
+
+  return fallback
+}
 </script>
 
 <template>
@@ -61,7 +74,17 @@ function select(candidate: ContentSelection) {
           <h2 id="outline">Outline</h2>
           <span class="project-navigator__count">{{ result?.plot_outline.length ?? 0 }}</span>
         </div>
-        <div class="project-navigator__item project-navigator__item--muted">
+        <template v-if="result?.plot_outline.length">
+          <div
+            v-for="(outline, index) in result.plot_outline"
+            :key="index"
+            class="project-navigator__item project-navigator__item--muted"
+          >
+            <ListTree :size="18" aria-hidden="true" />
+            <span>{{ itemLabel(outline, `Outline ${index + 1}`) }}</span>
+          </div>
+        </template>
+        <div v-else class="project-navigator__item project-navigator__item--muted">
           <ListTree :size="18" aria-hidden="true" />
           <span>Story outline</span>
         </div>
@@ -110,7 +133,17 @@ function select(candidate: ContentSelection) {
           <h2 id="world">World</h2>
           <span class="project-navigator__count">{{ result?.world_settings.length ?? 0 }}</span>
         </div>
-        <div class="project-navigator__item project-navigator__item--muted">
+        <template v-if="result?.world_settings.length">
+          <div
+            v-for="(setting, index) in result.world_settings"
+            :key="index"
+            class="project-navigator__item project-navigator__item--muted"
+          >
+            <Globe2 :size="18" aria-hidden="true" />
+            <span>{{ itemLabel(setting, `Setting ${index + 1}`) }}</span>
+          </div>
+        </template>
+        <div v-else class="project-navigator__item project-navigator__item--muted">
           <Globe2 :size="18" aria-hidden="true" />
           <span>World settings</span>
         </div>
