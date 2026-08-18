@@ -6,7 +6,20 @@ describe('App', () => {
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
   })
+
+  function setViewport(width: number) {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+    window.dispatchEvent(new Event('resize'))
+  }
+
+  function stubHealthyConnection() {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'ok', service: 'agentsky' })
+    }))
+  }
 
   it('shows the Vue to Spring to AgentSky connection', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -184,5 +197,55 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toBe('AgentSky is unavailable')
     })
+  })
+
+  it('opens and closes the tablet run metrics drawer without duplicate inspector content', async () => {
+    setViewport(1024)
+    stubHealthyConnection()
+
+    render(App)
+
+    const trigger = screen.getByRole('button', { name: 'Open run metrics' })
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+    await fireEvent.click(trigger)
+
+    expect(screen.getByRole('dialog', { name: 'Run metrics' })).toBeTruthy()
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getAllByRole('heading', { name: 'Run metrics' })).toHaveLength(1)
+    await fireEvent.click(screen.getByRole('button', { name: 'Close run metrics' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Run metrics' })).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('opens and closes the mobile project drawer with an accessible backdrop', async () => {
+    setViewport(390)
+    stubHealthyConnection()
+
+    render(App)
+
+    const trigger = screen.getByRole('button', { name: 'Open project directory' })
+    await fireEvent.click(trigger)
+
+    expect(screen.getByRole('dialog', { name: 'Project directory' })).toBeTruthy()
+    await fireEvent.click(screen.getByRole('button', { name: 'Close project directory backdrop' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Project directory' })).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('closes each responsive drawer with Escape and returns focus to its trigger', async () => {
+    setViewport(390)
+    stubHealthyConnection()
+
+    render(App)
+
+    for (const label of ['Open project directory', 'Open run metrics']) {
+      const trigger = screen.getByRole('button', { name: label })
+      await fireEvent.click(trigger)
+      await fireEvent.keyDown(window, { key: 'Escape' })
+
+      expect(document.activeElement).toBe(trigger)
+    }
   })
 })

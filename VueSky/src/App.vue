@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { PanelLeftClose, PanelLeftOpen, PanelRightOpen } from 'lucide-vue-next'
 import AgentWorkspace from './components/AgentWorkspace.vue'
 import ChapterReader from './components/ChapterReader.vue'
 import CharacterProfile from './components/CharacterProfile.vue'
 import ProjectNavigator, { type ContentSelection } from './components/ProjectNavigator.vue'
+import RunInspector from './components/RunInspector.vue'
 import { useNovelRun } from './composables/useNovelRun'
 
 const lastGeneratedIdea = ref('')
 const selectedContent = ref<ContentSelection>({ type: 'agent' })
+const viewportWidth = ref(typeof window === 'undefined' ? 1180 : window.innerWidth)
+const openDrawer = ref<'project' | 'metrics' | null>(null)
+const drawerTrigger = ref<HTMLElement | null>(null)
 const {
   connected,
   checked,
@@ -34,6 +39,8 @@ const selectedCharacter = computed(() =>
     ? result.value?.characters[selectedContent.value.index]
     : undefined
 )
+const isDesktop = computed(() => viewportWidth.value >= 1180)
+const isMobile = computed(() => viewportWidth.value < 760)
 
 watch(result, () => {
   if (selectedContent.value.type === 'chapter' && selectedChapter.value === undefined) {
@@ -54,12 +61,46 @@ function retryNovel() {
   if (lastGeneratedIdea.value) return generate(lastGeneratedIdea.value)
 }
 
-onMounted(checkConnection)
+function updateViewport() {
+  viewportWidth.value = window.innerWidth
+  if (isDesktop.value) openDrawer.value = null
+}
+
+function openResponsiveDrawer(drawer: 'project' | 'metrics', event: MouseEvent) {
+  drawerTrigger.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  openDrawer.value = drawer
+}
+
+function closeResponsiveDrawer() {
+  const trigger = drawerTrigger.value
+  openDrawer.value = null
+  nextTick(() => trigger?.focus())
+}
+
+function selectContent(selection: ContentSelection) {
+  selectedContent.value = selection
+  if (openDrawer.value === 'project') closeResponsiveDrawer()
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && openDrawer.value) closeResponsiveDrawer()
+}
+
+onMounted(() => {
+  checkConnection()
+  window.addEventListener('resize', updateViewport)
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateViewport)
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
   <div class="studio-shell">
-    <ProjectNavigator :result="result" :selection="selectedContent" @select="selectedContent = $event" />
+    <ProjectNavigator v-if="!isMobile" :result="result" :selection="selectedContent" @select="selectContent" />
 
     <main class="studio-canvas" :data-content-selection="selectedContent.type">
       <header class="topbar">
@@ -67,11 +108,37 @@ onMounted(checkConnection)
           <p class="product">Freesky</p>
           <h1>Novel workspace</h1>
         </div>
-        <div class="connection">
-          <span class="status-dot" :class="{ connected, failed: checked && !connected }" aria-hidden="true" />
-          <div>
-            <strong>{{ connected ? 'Connected' : checked ? 'Unavailable' : 'Connecting' }}</strong>
-            <span>VueSky -&gt; SprintbootSky -&gt; AgentSky</span>
+        <div class="topbar__actions">
+          <button
+            v-if="isMobile"
+            class="icon-button"
+            type="button"
+            aria-label="Open project directory"
+            title="Open project directory"
+            aria-controls="responsive-drawer"
+            :aria-expanded="openDrawer === 'project'"
+            @click="openResponsiveDrawer('project', $event)"
+          >
+            <PanelLeftOpen :size="19" aria-hidden="true" />
+          </button>
+          <button
+            v-if="!isDesktop"
+            class="icon-button"
+            type="button"
+            aria-label="Open run metrics"
+            title="Open run metrics"
+            aria-controls="responsive-drawer"
+            :aria-expanded="openDrawer === 'metrics'"
+            @click="openResponsiveDrawer('metrics', $event)"
+          >
+            <PanelRightOpen :size="19" aria-hidden="true" />
+          </button>
+          <div class="connection">
+            <span class="status-dot" :class="{ connected, failed: checked && !connected }" aria-hidden="true" />
+            <div>
+              <strong>{{ connected ? 'Connected' : checked ? 'Unavailable' : 'Connecting' }}</strong>
+              <span>VueSky -&gt; SprintbootSky -&gt; AgentSky</span>
+            </div>
           </div>
         </div>
       </header>
@@ -112,8 +179,53 @@ onMounted(checkConnection)
       />
     </main>
 
-    <aside class="studio-inspector" aria-label="Project inspector">
-      <h2>Project inspector</h2>
+    <aside v-if="isDesktop" class="studio-inspector" aria-label="Run metrics">
+      <RunInspector
+        :connected="connected"
+        :status="status"
+        :token-usage="tokenUsage"
+        :elapsed-seconds="elapsedSeconds"
+        :review-round="result?.review_round ?? null"
+        :completed-chapter-count="result?.completed_chapters.length ?? null"
+      />
+    </aside>
+  </div>
+
+  <div v-if="openDrawer" class="drawer-layer">
+    <button
+      class="drawer-backdrop"
+      type="button"
+      :aria-label="openDrawer === 'project' ? 'Close project directory backdrop' : 'Close run metrics backdrop'"
+      @click="closeResponsiveDrawer"
+    />
+    <aside
+      class="side-drawer"
+      :class="`side-drawer--${openDrawer}`"
+      id="responsive-drawer"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="openDrawer === 'project' ? 'Project directory' : 'Run metrics'"
+    >
+      <template v-if="openDrawer === 'project'">
+        <header class="side-drawer__header">
+          <h2>Project directory</h2>
+          <button class="icon-button" type="button" aria-label="Close project directory" title="Close project directory" @click="closeResponsiveDrawer">
+            <PanelLeftClose :size="18" aria-hidden="true" />
+          </button>
+        </header>
+        <ProjectNavigator :result="result" :selection="selectedContent" @select="selectContent" />
+      </template>
+      <RunInspector
+        v-else
+        :connected="connected"
+        :status="status"
+        :token-usage="tokenUsage"
+        :elapsed-seconds="elapsedSeconds"
+        :review-round="result?.review_round ?? null"
+        :completed-chapter-count="result?.completed_chapters.length ?? null"
+        dismissible
+        @close="closeResponsiveDrawer"
+      />
     </aside>
   </div>
 </template>
