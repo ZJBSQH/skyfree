@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { normalizeNovelResult } from '../types/novel'
 import type {
   AgentEvent,
   AgentName,
@@ -15,7 +16,7 @@ interface GenerateResponse {
   success?: boolean
   error?: string
   logs?: string[]
-  result?: NovelResult
+  result?: unknown
   token_usage?: TokenUsage
 }
 
@@ -93,7 +94,7 @@ export function useNovelRun(): NovelRunController {
       }
 
       events.value = parseAgentLogs(payload.logs ?? [])
-      result.value = payload.result ?? null
+      result.value = normalizeNovelResult(payload.result)
       tokenUsage.value = payload.token_usage ?? null
       status.value = 'completed'
     } catch (cause) {

@@ -6,12 +6,13 @@ export type ContentSelection =
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { BookOpen, Bot, Globe2, ListTree, Sparkles, Users } from 'lucide-vue-next'
-import type { NovelResult } from '../types/novel'
+import { normalizeCharacterCard, type NovelResult } from '../types/novel'
 
 const props = defineProps<{
   result: NovelResult | null
+  selection?: ContentSelection
 }>()
 
 const emit = defineEmits<{
@@ -19,13 +20,14 @@ const emit = defineEmits<{
 }>()
 
 const selection = ref<ContentSelection>({ type: 'agent' })
+const activeSelection = computed(() => props.selection ?? selection.value)
 
 function isSelected(candidate: ContentSelection) {
-  if (candidate.type === 'agent') return selection.value.type === 'agent'
+  if (candidate.type === 'agent') return activeSelection.value.type === 'agent'
 
-  return candidate.type === selection.value.type
-    && 'index' in selection.value
-    && candidate.index === selection.value.index
+  return candidate.type === activeSelection.value.type
+    && 'index' in activeSelection.value
+    && candidate.index === activeSelection.value.index
 }
 
 function select(candidate: ContentSelection) {
@@ -44,6 +46,10 @@ function itemLabel(item: unknown, fallback: string) {
   }
 
   return fallback
+}
+
+function characterLabel(character: unknown) {
+  return normalizeCharacterCard(character)?.name ?? 'Unnamed character'
 }
 </script>
 
@@ -116,7 +122,7 @@ function itemLabel(item: unknown, fallback: string) {
         </div>
         <button
           v-for="(character, index) in result?.characters ?? []"
-          :key="`${character.name}-${index}`"
+          :key="`${characterLabel(character)}-${index}`"
           class="project-navigator__item"
           :class="{ 'project-navigator__item--active': isSelected({ type: 'character', index }) }"
           type="button"
@@ -124,7 +130,7 @@ function itemLabel(item: unknown, fallback: string) {
           @click="select({ type: 'character', index })"
         >
           <Users :size="18" aria-hidden="true" />
-          <span>{{ character.name }}</span>
+          <span>{{ characterLabel(character) }}</span>
         </button>
       </section>
 

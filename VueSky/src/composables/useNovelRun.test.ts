@@ -48,6 +48,37 @@ describe('useNovelRun', () => {
     expect(controller.result.value?.completed_chapters).toEqual(['chapter'])
   })
 
+  it('normalizes incomplete characters and malformed relationship payloads', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'ok' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          result: {
+            completed_chapters: [],
+            characters: [
+              { role_type: 'supporting', relationships: 'not valid JSON' },
+              { name: 42, relationships: [null, { name: 'Toma', relation: 'Friend' }] }
+            ],
+            world_settings: [],
+            plot_outline: [],
+            review_round: 0
+          }
+        })
+      })
+    vi.stubGlobal('fetch', fetchMock)
+    const controller = useNovelRun()
+
+    await controller.checkConnection()
+    await controller.generate('A city above the clouds')
+
+    expect(controller.result.value?.characters).toEqual([
+      { name: 'Unnamed character', role_type: 'supporting', relationships: [] },
+      { name: 'Unnamed character', relationships: [{ name: 'Toma', relation: 'Friend' }] }
+    ])
+  })
+
   it('marks the service disconnected when its health endpoint fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,

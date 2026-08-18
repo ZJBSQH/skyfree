@@ -25,4 +25,17 @@ describe('ProjectNavigator', () => {
 
     expect(emitted('select')).toEqual([[{ type: 'character', index: 0 }]])
   })
+
+  it('uses the stable unnamed-character label for malformed names', () => {
+    render(ProjectNavigator, {
+      props: {
+        result: {
+          ...result,
+          characters: [{ name: 42 } as unknown as NovelResult['characters'][number]]
+        }
+      }
+    })
+
+    expect(screen.getByRole('button', { name: 'Unnamed character' })).toBeTruthy()
+  })
 })

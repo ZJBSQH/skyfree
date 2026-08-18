@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AgentWorkspace from './components/AgentWorkspace.vue'
 import ChapterReader from './components/ChapterReader.vue'
 import CharacterProfile from './components/CharacterProfile.vue'
@@ -35,6 +35,16 @@ const selectedCharacter = computed(() =>
     : undefined
 )
 
+watch(result, () => {
+  if (selectedContent.value.type === 'chapter' && selectedChapter.value === undefined) {
+    selectedContent.value = { type: 'agent' }
+  }
+
+  if (selectedContent.value.type === 'character' && !selectedCharacter.value) {
+    selectedContent.value = { type: 'agent' }
+  }
+})
+
 function generateNovel(idea: string) {
   lastGeneratedIdea.value = idea
   return generate(idea)
@@ -49,7 +59,7 @@ onMounted(checkConnection)
 
 <template>
   <div class="studio-shell">
-    <ProjectNavigator :result="result" @select="selectedContent = $event" />
+    <ProjectNavigator :result="result" :selection="selectedContent" @select="selectedContent = $event" />
 
     <main class="studio-canvas" :data-content-selection="selectedContent.type">
       <header class="topbar">

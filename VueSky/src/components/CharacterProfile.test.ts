@@ -1,8 +1,11 @@
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/vue'
+import { afterEach, describe, expect, it } from 'vitest'
 import CharacterProfile from './CharacterProfile.vue'
+import type { CharacterCard } from '../types/novel'
 
 describe('CharacterProfile', () => {
+  afterEach(cleanup)
+
   it('renders a foundational character profile from the returned character data', () => {
     render(CharacterProfile, {
       props: {
@@ -45,5 +48,47 @@ describe('CharacterProfile', () => {
 
     expect(screen.getAllByText('Not provided')).toHaveLength(4)
     expect(screen.getByText('0 relationships')).toBeTruthy()
+  })
+
+  it('uses a stable identity when the returned name is missing or not a string', async () => {
+    const { rerender } = render(CharacterProfile, {
+      props: {
+        character: { role_type: 'Supporting character' } as unknown as CharacterCard
+      }
+    })
+
+    expect(screen.getByRole('heading', { name: 'Unnamed character' })).toBeTruthy()
+    expect(screen.getByText('Un')).toBeTruthy()
+
+    await rerender({
+      character: { name: 42, role_type: 'Supporting character' } as unknown as CharacterCard
+    })
+
+    expect(screen.getByRole('heading', { name: 'Unnamed character' })).toBeTruthy()
+  })
+
+  it('filters malformed relationships before counting or rendering them', async () => {
+    const { rerender } = render(CharacterProfile, {
+      props: {
+        character: {
+          name: 'Lin',
+          role_type: 'Supporting character',
+          relationships: 'unparseable relationship data'
+        } as unknown as CharacterCard
+      }
+    })
+
+    expect(screen.getByText('0 relationships')).toBeTruthy()
+
+    await rerender({
+      character: {
+        name: 'Lin',
+        role_type: 'Supporting character',
+        relationships: [null, 'invalid entry', { name: 'Toma', relation: 'Friend' }]
+      } as unknown as CharacterCard
+    })
+
+    expect(screen.getByText('1 relationship')).toBeTruthy()
+    expect(screen.getByText('Toma')).toBeTruthy()
   })
 })

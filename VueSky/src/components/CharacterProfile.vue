@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CharacterCard } from '../types/novel'
+import { normalizeCharacterCard, type CharacterCard } from '../types/novel'
 
 const props = defineProps<{
   character: CharacterCard
 }>()
 
-const initials = computed(() => Array.from(props.character.name.trim()).slice(0, 2).join(''))
-const displayName = computed(() => props.character.name.trim())
-const relationshipCount = computed(() => props.character.relationships?.length ?? 0)
+const character = computed(() => normalizeCharacterCard(props.character) ?? {
+  name: 'Unnamed character',
+  relationships: []
+})
+const initials = computed(() => Array.from(character.value.name).slice(0, 2).join(''))
+const displayName = computed(() => character.value.name)
+const relationshipCount = computed(() => character.value.relationships?.length ?? 0)
 
-function provided(value: string | undefined) {
-  return value?.trim() || 'Not provided'
+function provided(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : 'Not provided'
 }
 </script>
 
