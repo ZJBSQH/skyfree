@@ -99,6 +99,10 @@ describe('App', () => {
         ok: true,
         json: async () => ({
           success: true,
+          logs: [
+            '[WriterAgent] Drafted the reviewed first chapter',
+            '[ReviewerAgent] Approved Chapter 1 for publication'
+          ],
           result: {
             completed_chapters: ['First chapter.\n\nSecond paragraph.'],
             characters: [{
@@ -113,18 +117,39 @@ describe('App', () => {
             world_settings: [],
             plot_outline: [],
             review_round: 1
+          },
+          token_usage: {
+            input_tokens: 8000,
+            output_tokens: 4450,
+            total_tokens: 12450,
+            call_count: 8,
+            cost_yuan: 0.0321,
+            model: 'deepseek-chat'
           }
         })
       })
     vi.stubGlobal('fetch', fetchMock)
+    setViewport(1180)
     render(App)
-    await screen.findByText('Connected')
+    await screen.findAllByText('Connected')
 
     expect(screen.getByRole('textbox', { name: 'Story idea' })).toBeTruthy()
 
     await fireEvent.update(screen.getByRole('textbox', { name: 'Story idea' }), 'A city above the clouds')
     await fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     await screen.findByRole('button', { name: 'Chapter 1' })
+
+    expect(screen.getByText('Writer')).toBeTruthy()
+    expect(screen.getByText('Drafted the reviewed first chapter')).toBeTruthy()
+    expect(screen.getByText('Reviewer')).toBeTruthy()
+    expect(screen.getByText('Approved Chapter 1 for publication')).toBeTruthy()
+    for (const [label, value] of [
+      ['Total tokens', '12,450'],
+      ['Input tokens', '8,000'],
+      ['Output tokens', '4,450']
+    ] as const) {
+      expect(screen.getByText(label).parentElement?.textContent).toContain(value)
+    }
 
     await fireEvent.click(screen.getByRole('button', { name: 'Chapter 1' }))
     expect(screen.getByRole('heading', { name: 'Chapter 1' })).toBeTruthy()
