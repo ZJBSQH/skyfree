@@ -76,6 +76,57 @@ describe('App', () => {
     }))
   })
 
+  it('retries a failed generation once with the original trimmed idea', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'ok', service: 'agentsky' })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ success: false, error: 'Generation failed' })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          logs: [],
+          result: {
+            completed_chapters: [],
+            characters: [],
+            world_settings: [],
+            plot_outline: [],
+            review_round: 0
+          }
+        })
+      })
+    vi.stubGlobal('fetch', fetchMock)
+    render(App)
+    await screen.findByText('Connected')
+
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Story idea' }),
+      '  A city above the clouds  '
+    )
+    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    await screen.findByRole('button', { name: 'Retry' })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+    })
+    const generationCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/novels')
+    expect(generationCalls).toHaveLength(2)
+    expect(generationCalls[1]).toEqual([
+      '/api/novels',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ idea: 'A city above the clouds' })
+      })
+    ])
+  })
+
   it('shows unavailable when the service chain cannot be reached', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
 
