@@ -76,6 +76,55 @@ describe('App', () => {
     }))
   })
 
+  it('opens a returned chapter and character profile from project navigation', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'ok', service: 'agentsky' })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          result: {
+            completed_chapters: ['First chapter.\n\nSecond paragraph.'],
+            characters: [{
+              name: 'Mara Venn',
+              role_type: 'Protagonist',
+              personality: 'Methodical under pressure',
+              background: 'Raised among the city archivists',
+              ability: 'Maps shifting city routes',
+              motivation: 'Find her missing brother',
+              relationships: [{ name: 'Toma', relation: 'Friend', dynamic: 'Trusted partner' }]
+            }],
+            world_settings: [],
+            plot_outline: [],
+            review_round: 1
+          }
+        })
+      })
+    vi.stubGlobal('fetch', fetchMock)
+    render(App)
+    await screen.findByText('Connected')
+
+    expect(screen.getByRole('textbox', { name: 'Story idea' })).toBeTruthy()
+
+    await fireEvent.update(screen.getByRole('textbox', { name: 'Story idea' }), 'A city above the clouds')
+    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    await screen.findByRole('button', { name: 'Chapter 1' })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Chapter 1' }))
+    expect(screen.getByRole('heading', { name: 'Chapter 1' })).toBeTruthy()
+    expect(screen.getByText((_, element) => element?.textContent === 'First chapter.\n\nSecond paragraph.').textContent).toBe(
+      'First chapter.\n\nSecond paragraph.'
+    )
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mara Venn' }))
+    expect(screen.getByRole('heading', { name: 'Mara Venn' })).toBeTruthy()
+    expect(screen.getByText('Find her missing brother')).toBeTruthy()
+    expect(screen.getByText('1 relationship')).toBeTruthy()
+  })
+
   it('retries a failed generation once with the original trimmed idea', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({

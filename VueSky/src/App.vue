@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AgentWorkspace from './components/AgentWorkspace.vue'
+import ChapterReader from './components/ChapterReader.vue'
+import CharacterProfile from './components/CharacterProfile.vue'
 import ProjectNavigator, { type ContentSelection } from './components/ProjectNavigator.vue'
 import { useNovelRun } from './composables/useNovelRun'
 
@@ -21,6 +23,16 @@ const {
 
 const errorMessage = computed(() =>
   error.value || (checked.value && !connected.value ? 'AgentSky is unavailable' : '')
+)
+const selectedChapter = computed(() =>
+  selectedContent.value.type === 'chapter'
+    ? result.value?.completed_chapters[selectedContent.value.index]
+    : undefined
+)
+const selectedCharacter = computed(() =>
+  selectedContent.value.type === 'character'
+    ? result.value?.characters[selectedContent.value.index]
+    : undefined
 )
 
 function generateNovel(idea: string) {
@@ -54,29 +66,40 @@ onMounted(checkConnection)
         </div>
       </header>
 
-      <AgentWorkspace
-        :status="status"
-        :events="events"
-        :error-message="errorMessage"
-        :connected="connected"
-        :elapsed-seconds="elapsedSeconds"
-        @generate="generateNovel"
-        @retry="retryNovel"
-      />
+      <template v-if="selectedContent.type === 'agent'">
+        <AgentWorkspace
+          :status="status"
+          :events="events"
+          :error-message="errorMessage"
+          :connected="connected"
+          :elapsed-seconds="elapsedSeconds"
+          @generate="generateNovel"
+          @retry="retryNovel"
+        />
 
-      <section v-if="result?.completed_chapters.length" class="results" aria-labelledby="results-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Reviewed output</p>
-            <h2 id="results-title">Completed chapters</h2>
+        <section v-if="result?.completed_chapters.length" class="results" aria-labelledby="results-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Reviewed output</p>
+              <h2 id="results-title">Completed chapters</h2>
+            </div>
+            <span v-if="tokenUsage" class="counter">{{ tokenUsage.total_tokens }} tokens</span>
           </div>
-          <span v-if="tokenUsage" class="counter">{{ tokenUsage.total_tokens }} tokens</span>
-        </div>
-        <article v-for="(chapter, index) in result?.completed_chapters ?? []" :key="index" class="chapter">
-          <h3>Chapter {{ index + 1 }}</h3>
-          <p>{{ chapter }}</p>
-        </article>
-      </section>
+          <article v-for="(chapter, index) in result?.completed_chapters ?? []" :key="index" class="chapter">
+            <h3>Chapter {{ index + 1 }}</h3>
+            <p>{{ chapter }}</p>
+          </article>
+        </section>
+      </template>
+      <ChapterReader
+        v-else-if="selectedChapter !== undefined"
+        :content="selectedChapter"
+        :chapter-number="selectedContent.index + 1"
+      />
+      <CharacterProfile
+        v-else-if="selectedCharacter"
+        :character="selectedCharacter"
+      />
     </main>
 
     <aside class="studio-inspector" aria-label="Project inspector">

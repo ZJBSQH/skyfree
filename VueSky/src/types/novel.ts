@@ -19,14 +19,28 @@ export interface TokenUsage {
   model: string
 }
 
-export interface NovelCharacter {
+export interface CharacterRelationship {
+  name?: string
+  relation?: string
+  dynamic?: string
+}
+
+export interface CharacterCard {
   name: string
   role_type: string
+  appearance?: string
+  personality?: string
+  background?: string
+  ability?: string
+  motivation?: string
+  relationships?: CharacterRelationship[]
 }
+
+export type NovelCharacter = CharacterCard
 
 export interface NovelResult {
   completed_chapters: string[]
-  characters: NovelCharacter[]
+  characters: CharacterCard[]
   world_settings: unknown[]
   plot_outline: unknown[]
   review_round: number
