@@ -343,3 +343,11 @@ textarea::placeholder { color: #89918c; }
   .connection span:last-child { display: none; }
   .side-drawer { width: min(340px, calc(100vw - 16px)); }
 }
+
+@media (max-width: 359px) {
+  .studio-canvas { padding: 16px; }
+  .topbar { flex-direction: column; align-items: stretch; gap: 14px; padding-bottom: 16px; }
+  .topbar h1 { font-size: 26px; overflow-wrap: anywhere; }
+  .topbar__actions { width: 100%; justify-content: flex-start; gap: 6px; }
+  .connection { min-width: 0; padding-top: 0; }
+}

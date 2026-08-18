@@ -13,6 +13,7 @@ const selectedContent = ref<ContentSelection>({ type: 'agent' })
 const viewportWidth = ref(typeof window === 'undefined' ? 1180 : window.innerWidth)
 const openDrawer = ref<'project' | 'metrics' | null>(null)
 const drawerTrigger = ref<HTMLElement | null>(null)
+const drawerDialog = ref<HTMLElement | null>(null)
 const {
   connected,
   checked,
@@ -63,18 +64,40 @@ function retryNovel() {
 
 function updateViewport() {
   viewportWidth.value = window.innerWidth
-  if (isDesktop.value) openDrawer.value = null
+  if ((openDrawer.value === 'project' && !isMobile.value) || (openDrawer.value === 'metrics' && isDesktop.value)) {
+    closeResponsiveDrawer(false)
+  }
 }
 
 function openResponsiveDrawer(drawer: 'project' | 'metrics', event: MouseEvent) {
   drawerTrigger.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   openDrawer.value = drawer
+  nextTick(focusFirstDrawerControl)
 }
 
-function closeResponsiveDrawer() {
+function focusableDrawerElements() {
+  if (!drawerDialog.value) return []
+
+  return Array.from(drawerDialog.value.querySelectorAll<HTMLElement>(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter((element) => element.tabIndex >= 0)
+}
+
+function focusFirstDrawerControl() {
+  focusableDrawerElements()[0]?.focus()
+}
+
+function closeResponsiveDrawer(restoreFocus = true) {
   const trigger = drawerTrigger.value
   openDrawer.value = null
-  nextTick(() => trigger?.focus())
+  if (!restoreFocus) return
+
+  nextTick(() => {
+    if (!trigger?.isConnected) return
+
+    const style = window.getComputedStyle(trigger)
+    if (style.display !== 'none' && style.visibility !== 'hidden') trigger.focus()
+  })
 }
 
 function selectContent(selection: ContentSelection) {
@@ -84,6 +107,22 @@ function selectContent(selection: ContentSelection) {
 
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && openDrawer.value) closeResponsiveDrawer()
+  if (event.key !== 'Tab' || !openDrawer.value) return
+
+  const focusableElements = focusableDrawerElements()
+  if (!focusableElements.length) return
+
+  const first = focusableElements[0]!
+  const last = focusableElements[focusableElements.length - 1]!
+  const activeElement = document.activeElement
+
+  if (event.shiftKey && (activeElement === first || !drawerDialog.value?.contains(activeElement))) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && (activeElement === last || !drawerDialog.value?.contains(activeElement))) {
+    event.preventDefault()
+    first.focus()
+  }
 }
 
 onMounted(() => {
@@ -196,12 +235,13 @@ onBeforeUnmount(() => {
       class="drawer-backdrop"
       type="button"
       :aria-label="openDrawer === 'project' ? 'Close project directory backdrop' : 'Close run metrics backdrop'"
-      @click="closeResponsiveDrawer"
+      @click="closeResponsiveDrawer()"
     />
     <aside
       class="side-drawer"
       :class="`side-drawer--${openDrawer}`"
       id="responsive-drawer"
+      ref="drawerDialog"
       role="dialog"
       aria-modal="true"
       :aria-label="openDrawer === 'project' ? 'Project directory' : 'Run metrics'"
@@ -209,7 +249,7 @@ onBeforeUnmount(() => {
       <template v-if="openDrawer === 'project'">
         <header class="side-drawer__header">
           <h2>Project directory</h2>
-          <button class="icon-button" type="button" aria-label="Close project directory" title="Close project directory" @click="closeResponsiveDrawer">
+          <button class="icon-button" type="button" aria-label="Close project directory" title="Close project directory" @click="closeResponsiveDrawer()">
             <PanelLeftClose :size="18" aria-hidden="true" />
           </button>
         </header>

@@ -248,4 +248,63 @@ describe('App', () => {
       expect(document.activeElement).toBe(trigger)
     }
   })
+
+  it('closes the project drawer safely at the 759px to 760px boundary', async () => {
+    setViewport(759)
+    stubHealthyConnection()
+
+    render(App)
+
+    const trigger = screen.getByRole('button', { name: 'Open project directory' })
+    expect(screen.queryByRole('navigation', { name: 'Project navigation' })).toBeNull()
+    await fireEvent.click(trigger)
+    expect(screen.getByRole('dialog', { name: 'Project directory' })).toBeTruthy()
+
+    setViewport(760)
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Project directory' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Open project directory' })).toBeNull()
+      expect(screen.getAllByRole('navigation', { name: 'Project navigation' })).toHaveLength(1)
+    })
+    expect(document.activeElement).not.toBe(trigger)
+  })
+
+  it('moves focus into an open drawer and contains Tab navigation', async () => {
+    setViewport(390)
+    stubHealthyConnection()
+
+    render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Open project directory' }))
+
+    const close = screen.getByRole('button', { name: 'Close project directory' })
+    const projectNavigationButton = screen.getByRole('button', { name: 'Agent workspace' })
+    expect(document.activeElement).toBe(close)
+
+    await fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(projectNavigationButton)
+
+    await fireEvent.keyDown(projectNavigationButton, { key: 'Tab' })
+    expect(document.activeElement).toBe(close)
+  })
+
+  it('uses the metrics drawer through 1179px and restores the desktop inspector at 1180px', async () => {
+    setViewport(1179)
+    stubHealthyConnection()
+
+    render(App)
+
+    const trigger = screen.getByRole('button', { name: 'Open run metrics' })
+    await fireEvent.click(trigger)
+    expect(screen.getByRole('dialog', { name: 'Run metrics' })).toBeTruthy()
+
+    setViewport(1180)
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Run metrics' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Open run metrics' })).toBeNull()
+      expect(screen.getAllByRole('heading', { name: 'Run metrics' })).toHaveLength(1)
+    })
+  })
 })
