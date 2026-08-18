@@ -1,32 +1,35 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AgentWorkspace from './components/AgentWorkspace.vue'
 import ProjectNavigator, { type ContentSelection } from './components/ProjectNavigator.vue'
 import { useNovelRun } from './composables/useNovelRun'
 
-const idea = ref('')
+const lastGeneratedIdea = ref('')
 const selectedContent = ref<ContentSelection>({ type: 'agent' })
 const {
   connected,
   checked,
   status,
+  events,
   result,
   tokenUsage,
   error,
+  elapsedSeconds,
   checkConnection,
   generate
 } = useNovelRun()
 
-const generating = computed(() => status.value === 'running')
 const errorMessage = computed(() =>
   error.value || (checked.value && !connected.value ? 'AgentSky is unavailable' : '')
 )
 
-const canGenerate = computed(() =>
-  connected.value && idea.value.trim().length > 0 && !generating.value
-)
+function generateNovel(idea: string) {
+  lastGeneratedIdea.value = idea
+  return generate(idea)
+}
 
-function generateNovel() {
-  return generate(idea.value)
+function retryNovel() {
+  if (lastGeneratedIdea.value) return generate(lastGeneratedIdea.value)
 }
 
 onMounted(checkConnection)
@@ -51,33 +54,15 @@ onMounted(checkConnection)
         </div>
       </header>
 
-      <section class="workspace" aria-labelledby="idea-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">New project</p>
-            <h2 id="idea-title">Story idea</h2>
-          </div>
-          <span class="counter">{{ idea.length }} / 2000</span>
-        </div>
-
-        <form class="idea-form" @submit.prevent="generateNovel">
-          <label class="sr-only" for="story-idea">Story idea</label>
-          <textarea
-            id="story-idea"
-            v-model="idea"
-            maxlength="2000"
-            placeholder="A courier discovers that every undelivered letter changes the city..."
-          />
-          <div class="form-actions">
-            <span class="state-copy">{{ generating ? 'Agents are writing and reviewing...' : '' }}</span>
-            <button type="submit" :disabled="!canGenerate">
-              {{ generating ? 'Generating' : 'Generate' }}
-            </button>
-          </div>
-        </form>
-
-        <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
-      </section>
+      <AgentWorkspace
+        :status="status"
+        :events="events"
+        :error-message="errorMessage"
+        :connected="connected"
+        :elapsed-seconds="elapsedSeconds"
+        @generate="generateNovel"
+        @retry="retryNovel"
+      />
 
       <section v-if="result?.completed_chapters.length" class="results" aria-labelledby="results-title">
         <div class="section-heading">
