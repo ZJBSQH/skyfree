@@ -2,6 +2,7 @@
 
 import json
 import io
+import logging
 import os
 import secrets
 import threading
@@ -14,6 +15,7 @@ from state import make_initial_state
 from graph.workflow import create_workflow
 
 app = FastAPI(title="AgentSky API")
+logger = logging.getLogger(__name__)
 
 
 def _max_concurrent_requests() -> int:
@@ -34,6 +36,7 @@ class CreateResponse(BaseModel):
     logs: list[str]
     result: dict
     error: str = ""
+    error_code: str = ""
     token_usage: dict = {}
 
 
@@ -65,9 +68,21 @@ def _create_novel(req: CreateRequest):
 
     idea = req.idea.strip()
     if not idea:
-        return CreateResponse(success=False, logs=["[ERROR] idea为空"], result={}, error="创作灵感不能为空")
+        return CreateResponse(
+            success=False,
+            logs=["[ERROR] idea为空"],
+            result={},
+            error="创作灵感不能为空",
+            error_code="INVALID_IDEA",
+        )
     if len(idea) > 2000:
-        return CreateResponse(success=False, logs=[f"[ERROR] idea过长({len(idea)}字符)"], result={}, error="创作灵感不能超过2000字符")
+        return CreateResponse(
+            success=False,
+            logs=[f"[ERROR] idea过长({len(idea)}字符)"],
+            result={},
+            error="创作灵感不能超过2000字符",
+            error_code="INVALID_IDEA",
+        )
 
     # 重置 Token 追踪器
     from llm.config import reset_tracker, get_tracker
@@ -80,13 +95,27 @@ def _create_novel(req: CreateRequest):
         model = get_model()
         log("[INIT] model ready (deepseek-chat)")
     except Exception as e:
-        return CreateResponse(success=False, logs=logs, result={}, error=f"模型初始化失败: {e}")
+        logger.exception("AgentSky model initialization failed")
+        return CreateResponse(
+            success=False,
+            logs=logs,
+            result={},
+            error="模型初始化失败，请检查服务配置",
+            error_code="MODEL_INIT_FAILED",
+        )
 
     try:
         workflow = create_workflow(model)
         log("[INIT] workflow compiled")
     except Exception as e:
-        return CreateResponse(success=False, logs=logs, result={}, error=f"工作流编译失败: {e}")
+        logger.exception("AgentSky workflow compilation failed")
+        return CreateResponse(
+            success=False,
+            logs=logs,
+            result={},
+            error="创作工作流初始化失败，请稍后重试",
+            error_code="WORKFLOW_INIT_FAILED",
+        )
 
     state = make_initial_state(idea)
 
@@ -141,7 +170,8 @@ def _create_novel(req: CreateRequest):
                 success=False,
                 logs=logs,
                 result={},
-                error="No chapter passed review",
+                error="正文在最大审核轮次内未通过，请调整创作灵感后重试",
+                error_code="REVIEW_NOT_APPROVED",
                 token_usage=tracker.to_dict(),
             )
 
@@ -151,7 +181,15 @@ def _create_novel(req: CreateRequest):
         import traceback
         log(f"[ERROR] {e}")
         log(traceback.format_exc())
-        return CreateResponse(success=False, logs=logs, result={}, error=str(e), token_usage=get_tracker().to_dict())
+        logger.exception("AgentSky workflow execution failed")
+        return CreateResponse(
+            success=False,
+            logs=logs,
+            result={},
+            error="创作流程执行失败，请稍后重试",
+            error_code="WORKFLOW_FAILED",
+            token_usage=get_tracker().to_dict(),
+        )
 
 
 def _serialize_settings(settings: list) -> list:

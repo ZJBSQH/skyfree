@@ -89,13 +89,13 @@ export function useNovelRun(): NovelRunController {
         body: JSON.stringify({ idea: idea.trim() })
       })
       const payload: GenerateResponse = await response.json()
+      tokenUsage.value = payload.token_usage ?? null
       if (!response.ok || !payload.success) {
-        throw new Error('创作失败，请稍后重试')
+        throw new Error(payload.error || '创作失败，请稍后重试')
       }
 
       events.value = parseAgentLogs(payload.logs ?? [])
       result.value = normalizeNovelResult(payload.result)
-      tokenUsage.value = payload.token_usage ?? null
       status.value = 'completed'
     } catch (cause) {
       error.value = cause instanceof Error ? cause.message : '创作失败，请稍后重试'

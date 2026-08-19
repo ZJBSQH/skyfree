@@ -124,7 +124,9 @@ def test_create_fails_when_workflow_has_no_reviewed_chapter(monkeypatch):
     assert response.status_code == 200
     assert response.json()["success"] is False
     assert response.json()["result"] == {}
-    assert response.json()["error"] == "No chapter passed review"
+    assert response.json()["error_code"] == "REVIEW_NOT_APPROVED"
+    assert response.json()["error"] == "正文在最大审核轮次内未通过，请调整创作灵感后重试"
+    assert response.json()["token_usage"]["total_tokens"] == 0
 
 
 def test_create_rejects_request_when_concurrency_limit_is_reached(monkeypatch):

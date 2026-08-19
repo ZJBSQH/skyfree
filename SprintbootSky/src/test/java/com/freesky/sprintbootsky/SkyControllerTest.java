@@ -74,17 +74,27 @@ class SkyControllerTest {
     void createNovelSanitizesUnsafeAgentSkyFailure() throws Exception {
         when(agentSkyClient.create(any())).thenReturn(Map.of(
                 "success", false,
+                "error_code", "REVIEW_NOT_APPROVED",
                 "error", "Traceback: provider credential leaked",
                 "logs", List.of("[ERROR] Traceback: provider credential leaked"),
-                "result", Map.of("debug", "unsafe")));
+                "result", Map.of("debug", "unsafe"),
+                "token_usage", Map.of(
+                        "input_tokens", 8000,
+                        "output_tokens", 4450,
+                        "total_tokens", 12450,
+                        "call_count", 8,
+                        "cost_yuan", 0.0169,
+                        "model", "deepseek-chat")));
 
         mockMvc.perform(post("/api/novels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"idea\":\"A city above the clouds\"}"))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.error", is("We could not complete your novel. Please try again.")))
+                .andExpect(jsonPath("$.error", is("正文在最大审核轮次内未通过，请调整创作灵感后重试")))
                 .andExpect(jsonPath("$.logs").isEmpty())
-                .andExpect(jsonPath("$.result").isEmpty());
+                .andExpect(jsonPath("$.result").isEmpty())
+                .andExpect(jsonPath("$.token_usage.total_tokens", is(12450)))
+                .andExpect(jsonPath("$.token_usage.call_count", is(8)));
     }
 }

@@ -116,14 +116,27 @@ describe('useNovelRun', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
-      json: async () => ({ success: false, error: 'AgentSky unavailable' })
+      json: async () => ({
+        success: false,
+        error: '正文在最大审核轮次内未通过，请调整创作灵感后重试',
+        token_usage: {
+          input_tokens: 8000,
+          output_tokens: 4450,
+          total_tokens: 12450,
+          call_count: 8,
+          cost_yuan: 0.0169,
+          model: 'deepseek-chat'
+        }
+      })
     }))
     const controller = useNovelRun()
 
     await controller.generate('A city above the clouds')
 
     expect(controller.status.value).toBe('failed')
-    expect(controller.error.value).toBe('创作失败，请稍后重试')
+    expect(controller.error.value).toBe('正文在最大审核轮次内未通过，请调整创作灵感后重试')
+    expect(controller.tokenUsage.value?.total_tokens).toBe(12450)
+    expect(controller.tokenUsage.value?.call_count).toBe(8)
   })
 
   it('ignores a second generate call while the first is running', async () => {

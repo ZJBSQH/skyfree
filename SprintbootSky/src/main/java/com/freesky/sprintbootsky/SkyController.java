@@ -1,6 +1,7 @@
 package com.freesky.sprintbootsky;
 
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -54,11 +55,13 @@ public class SkyController {
         try {
             Map<String, Object> response = agentSkyClient.create(request.idea());
             if (Boolean.FALSE.equals(response.get("success"))) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
-                        "success", false,
-                        "logs", java.util.List.of(),
-                        "result", Map.of(),
-                        "error", "We could not complete your novel. Please try again."));
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("success", false);
+                body.put("logs", java.util.List.of());
+                body.put("result", Map.of());
+                body.put("error", publicFailureMessage(response.get("error_code")));
+                body.put("token_usage", sanitizeTokenUsage(response.get("token_usage")));
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
             }
             return ResponseEntity.ok(response);
         } catch (RestClientException | IllegalStateException exception) {
@@ -71,6 +74,35 @@ public class SkyController {
                 "status", "unavailable",
                 "service", "agentsky",
                 "error", "AgentSky is unavailable"));
+    }
+
+    private String publicFailureMessage(Object errorCode) {
+        return switch (String.valueOf(errorCode)) {
+            case "REVIEW_NOT_APPROVED" -> "正文在最大审核轮次内未通过，请调整创作灵感后重试";
+            case "MODEL_INIT_FAILED" -> "模型服务初始化失败，请检查配置后重试";
+            case "WORKFLOW_INIT_FAILED" -> "创作工作流初始化失败，请稍后重试";
+            default -> "创作流程执行失败，请稍后重试";
+        };
+    }
+
+    private Map<String, Object> sanitizeTokenUsage(Object rawUsage) {
+        if (!(rawUsage instanceof Map<?, ?> usage)) {
+            return Map.of();
+        }
+
+        Map<String, Object> safeUsage = new LinkedHashMap<>();
+        for (String key : java.util.List.of(
+                "input_tokens", "output_tokens", "total_tokens", "call_count", "cost_yuan")) {
+            Object value = usage.get(key);
+            if (value instanceof Number) {
+                safeUsage.put(key, value);
+            }
+        }
+        Object model = usage.get("model");
+        if (model instanceof String modelName && modelName.length() <= 80) {
+            safeUsage.put("model", modelName);
+        }
+        return safeUsage;
     }
 
     public record CreateNovelRequest(
