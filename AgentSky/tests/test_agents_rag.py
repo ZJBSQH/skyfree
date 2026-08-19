@@ -70,3 +70,25 @@ def test_plot_prompt_includes_rag_section():
     agent = PlotAgent(model, PP, store=FakeStore())
     agent.invoke(make_initial_state("设计大纲"))
     assert "## 参考资料（向量检索）" in _user_prompt(model)
+
+
+def test_rag_disabled_skips_embedding_model_load(monkeypatch):
+    """RAG_ENABLED=false 时不应实例化 SentenceTransformer（避免联网下载模型）"""
+    import agents.rag as rag_module
+
+    monkeypatch.setenv("RAG_ENABLED", "false")
+
+    called = False
+
+    def _should_not_call(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("RAG_ENABLED=false 时不应加载嵌入模型")
+
+    monkeypatch.setattr(rag_module, "SentenceTransformer", _should_not_call)
+
+    store = rag_module.RagStore()
+
+    assert called is False
+    assert store.embedder is None
+    assert store.search("测试查询") == []

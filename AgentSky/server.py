@@ -3,11 +3,12 @@
 import sys
 import json
 import io
+import os
+import secrets
+import threading
 from contextlib import redirect_stdout
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 from state import make_initial_state
@@ -15,12 +16,15 @@ from graph.workflow import create_workflow
 
 app = FastAPI(title="AgentSky API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+def _max_concurrent_requests() -> int:
+    try:
+        return max(1, int(os.getenv("AGENTSKY_MAX_CONCURRENT", "1")))
+    except ValueError:
+        return 1
+
+
+_CREATE_SLOTS = threading.BoundedSemaphore(_max_concurrent_requests())
 
 
 class CreateRequest(BaseModel):
@@ -36,7 +40,25 @@ class CreateResponse(BaseModel):
 
 
 @app.post("/api/create", response_model=CreateResponse)
-def create_novel(req: CreateRequest):
+def create_novel(
+    req: CreateRequest,
+    service_token: str | None = Header(default=None, alias="X-AgentSky-Token"),
+):
+    expected_token = os.getenv("AGENTSKY_API_TOKEN", "").strip()
+    if not expected_token:
+        raise HTTPException(status_code=503, detail="AgentSky service token is not configured")
+    if service_token is None or not secrets.compare_digest(service_token, expected_token):
+        raise HTTPException(status_code=401, detail="Invalid AgentSky service token")
+    if not _CREATE_SLOTS.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail="AgentSky is busy")
+
+    try:
+        return _create_novel(req)
+    finally:
+        _CREATE_SLOTS.release()
+
+
+def _create_novel(req: CreateRequest):
     """接收创作灵感，运行完整多Agent创作流程"""
     logs = []
 
@@ -87,6 +109,7 @@ def create_novel(req: CreateRequest):
         characters = result.get("characters", [])
         plot = result.get("plot_outline", [])
         draft = result.get("current_draft", "")
+        completed_chapters = result.get("completed_chapters", [])
         review_issues = result.get("review_issues", [])
         review_passed = result.get("review_passed", False)
         review_round = result.get("review_round", 0)
@@ -101,6 +124,7 @@ def create_novel(req: CreateRequest):
             "settings_count": len(settings),
             "characters_count": len(characters),
             "plot_count": len(plot),
+            "completed_chapters_count": len(completed_chapters),
             "draft_length": len(draft),
             "review_passed": review_passed,
             "review_round": review_round,
@@ -108,6 +132,7 @@ def create_novel(req: CreateRequest):
             "world_settings": _serialize_settings(settings),
             "characters": _serialize_characters(characters),
             "plot_outline": _serialize_plot(plot),
+            "completed_chapters": list(completed_chapters),
             "current_draft": draft,
             "review_issues": review_issues,
         }
@@ -144,20 +169,14 @@ def _serialize_plot(plot: list) -> list:
 
 @app.get("/api/health")
 def health_check():
-    """快速测试 API 连通性"""
-    try:
-        from llm.config import get_model
-        model = get_model()
-        from langchain_core.messages import HumanMessage
-        resp = model.invoke([HumanMessage(content="hi")], config={"timeout": 15})
-        return {"status": "ok", "model": "deepseek-chat", "response": resp.content[:50]}
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
-
-
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+    """不触发外部模型调用的进程存活检查。"""
+    return {"status": "ok", "service": "agentsky"}
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8765)
+    uvicorn.run(
+        app,
+        host=os.getenv("AGENTSKY_HOST", "127.0.0.1"),
+        port=int(os.getenv("AGENTSKY_PORT", "8765")),
+    )

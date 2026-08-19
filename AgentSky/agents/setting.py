@@ -52,8 +52,15 @@ class SettingAgent(BaseAgent):
         self._log(f"设定库现有{len(existing)}条，准备生成新设定...")
 
         result = self._call_llm_json(prompt)
+        self._validate_result(result, {
+            "new_settings": list,
+            "conflict_report": str,
+            "summary": str,
+        }, "setting")
 
         new_settings = result.get("new_settings", [])
+        if any(not isinstance(setting, dict) for setting in new_settings):
+            raise ValueError("setting field new_settings must contain objects")
         for s in new_settings:
             s["version"] = 1
 

@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freesky 综合测试 — P1~P5</title>
+  <style>
+    :root {
+      --ink: #1a1a2e;
+      --muted: #5a5a7a;
+      --paper: #faf8f5;
+      --panel: #fffefb;
+      --line: #e0dcd5;
+      --teal: #0d6b68;
+      --teal-light: #e8f4f3;
+      --coral: #d85f45;
+      --coral-light: #fef0ed;
+      --gold: #b8860b;
+      --gold-light: #fff8e7;
+      --shadow: 0 2px 12px rgba(0,0,0,.06);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Noto Serif SC", "Songti SC", Georgia, serif;
+      line-height: 1.8;
+    }
+
+    /* ── Print ── */
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+      .section { break-inside: avoid; padding: 18px 0 !important; }
+      .card { box-shadow: none; border: 1px solid #ccc; }
+      textarea { border: 1px solid #ccc; resize: none; }
+      #timer, #toc, .action-bar, #score-panel { display: none !important; }
+    }
+
+    .shell { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+
+    /* ── Header ── */
+    .exam-header {
+      text-align: center;
+      padding: 48px 0 36px;
+      border-bottom: 2px solid var(--teal);
+      margin-bottom: 32px;
+    }
+    .exam-header .eyebrow {
+      color: var(--coral);
+      font: 700 .75rem "Cascadia Code", Consolas, monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .exam-header h1 {
+      font-size: 2.6rem;
+      letter-spacing: -.02em;
+      margin: 10px 0 6px;
+    }
+    .exam-header h1 em { color: var(--teal); font-style: normal; }
+    .exam-header .meta {
+      color: var(--muted);
+      font-size: .95rem;
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .exam-header .meta span { white-space: nowrap; }
+
+    /* ── Timer & Score ── */
+    #timer {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--ink);
+      color: #f0e6d3;
+      text-align: center;
+      padding: 10px 0;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 1.1rem;
+    }
+    #timer.warning { background: #8b4513; }
+    #timer.danger  { background: var(--coral); animation: pulse .8s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: .75; }
+    }
+
+    #score-panel {
+      background: var(--teal-light);
+      border: 1px solid var(--teal);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 28px 0;
+      text-align: center;
+      display: none;
+    }
+    #score-panel h2 { color: var(--teal); margin-bottom: 6px; }
+    #score-panel .big-score { font-size: 3rem; font-weight: 900; color: var(--teal); }
+    #score-panel table { margin: 16px auto 0; border-collapse: collapse; }
+    #score-panel td { padding: 4px 16px; text-align: left; }
+    #score-panel td:last-child { text-align: right; font-weight: 700; }
+
+    /* ── TOC ── */
+    #toc {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+    #toc h3 { font-size: 1rem; color: var(--teal); margin-bottom: 8px; }
+    #toc ul { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+    #toc a { color: var(--teal); text-decoration: none; font-size: .92rem; }
+    #toc a:hover { text-decoration: underline; }
+
+    /* ── Sections ── */
+    .section { padding: 32px 0; }
+    .section + .section { border-top: 1px dashed var(--line); }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .section-num {
+      color: var(--coral);
+      font: 700 1.1rem "Cascadia Code", Consolas, monospace;
+      white-space: nowrap;
+    }
+    .section-head h2 { font-size: 1.5rem; }
+    .section-head .score-tag {
+      color: var(--muted);
+      font-size: .85rem;
+      white-space: nowrap;
+    }
+
+    /* ── Questions ── */
+    .q {
+      margin-bottom: 22px;
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .q-num { font-weight: 700; color: var(--teal); margin-right: 6px; }
+    .q-text { margin-bottom: 8px; }
+    .q-text code, .q-text pre {
+      font-family: "Cascadia Code", Consolas, monospace;
+      background: #f0eee8;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: .88em;
+    }
+    .q-text pre {
+      display: block;
+      padding: 12px 15px;
+      margin: 8px 0;
+      overflow-x: auto;
+      background: #1a1a2e;
+      color: #e8dfc8;
+      line-height: 1.55;
+      border-radius: 6px;
+    }
+
+    /* ── Options ── */
+    .opts { margin-left: 4px; }
+    .opts label {
+      display: block;
+      padding: 5px 0 5px 28px;
+      cursor: pointer;
+      position: relative;
+      border-radius: 4px;
+    }
+    .opts label:hover { background: var(--teal-light); }
+    .opts input[type="radio"] {
+      position: absolute;
+      left: 6px;
+      top: 10px;
+      accent-color: var(--teal);
+    }
+
+    /* ── True/False ── */
+    .tf-opts {
+      display: flex;
+      gap: 24px;
+      margin-left: 4px;
+    }
+    .tf-opts label {
+      cursor: pointer;
+      padding: 4px 12px;
+      border-radius: 4px;
+    }
+    .tf-opts label:hover { background: var(--teal-light); }
+    .tf-opts input { accent-color: var(--teal); margin-right: 4px; }
+
+    /* ── Fill in blank ── */
+    .blank-input {
+      border: none;
+      border-bottom: 2px solid var(--muted);
+      background: transparent;
+      font: .95rem "Cascadia Code", Consolas, monospace;
+      padding: 2px 6px;
+      width: 180px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .blank-input:focus { border-bottom-color: var(--teal); }
+
+    /* ── Short answer ── */
+    textarea.answer {
+      width: 100%;
+      min-height: 90px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font: .92rem/1.6 "Noto Serif SC", Georgia, serif;
+      resize: vertical;
+      background: var(--panel);
+      margin-top: 6px;
+    }
+    textarea.answer:focus { outline: none; border-color: var(--teal); }
+    textarea.answer.tall { min-height: 200px; }
+
+    /* ── Buttons ── */
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      padding: 28px 0 48px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font: 700 .9rem "Cascadia Code", Consolas, monospace;
+      transition: background .2s, opacity .2s;
+    }
+    .btn-primary { background: var(--teal); color: #fff; }
+    .btn-primary:hover { background: #095250; }
+    .btn-outline { background: transparent; border: 2px solid var(--teal); color: var(--teal); }
+    .btn-outline:hover { background: var(--teal-light); }
+    .btn-danger { background: var(--coral); color: #fff; }
+    .btn-danger:hover { background: #b94d38; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Feedback ── */
+    .feedback {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: .88rem;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback.correct { background: #e6f5e6; color: #1a5c1a; border-left: 3px solid #2d8f2d; }
+    .feedback.wrong   { background: #fef0ed; color: #8b2500; border-left: 3px solid var(--coral); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .exam-header h1 { font-size: 1.6rem; }
+      #toc ul { grid-template-columns: 1fr; }
+      .section-head { flex-wrap: wrap; }
+      .blank-input { width: 130px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="timer" class="no-print">
+  ⏱ 剩余时间：<span id="time-display">90:00</span>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <button onclick="startTimer()" style="background:#f0e6d3;color:var(--ink);border:0;padding:3px 12px;border-radius:4px;cursor:pointer;font:inherit;font-size:.8rem;">开始考试</button>
+  <button onclick="pauseTimer()" style="background:#f0e6d3;color:var(--ink);border:0;padding:3px 12px;border-radius:4px;cursor:pointer;font:inherit;font-size:.8rem;margin-left:4px;">暂停</button>
+</div>
+
+<div class="shell">
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="exam-header">
+    <div class="eyebrow">Freesky · Phase A · P1~P5 综合测试</div>
+    <h1>多Agent写作助手<br><em>学习成果检测</em></h1>
+    <div class="meta">
+      <span>📋 满分 100 分</span>
+      <span>⏱ 考试时间 90 分钟</span>
+      <span>📅 2026-07-27</span>
+      <span>👤 郑</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════ TOC ═══════════════ -->
+  <nav id="toc" class="no-print">
+    <h3>📑 试卷结构</h3>
+    <ul>
+      <li><a href="#s1">一、单选题</a> — 15×2′ = 30分</li>
+      <li><a href="#s2">二、判断题</a> — 10×1′ = 10分</li>
+      <li><a href="#s3">三、填空题</a> — 10×2′ = 20分</li>
+      <li><a href="#s4">四、代码输出预测</a> — 3×5′ = 15分</li>
+      <li><a href="#s5">五、简答题</a> — 3×5′ = 15分</li>
+      <li><a href="#s6">六、编程设计题</a> — 1×10′ = 10分</li>
+    </ul>
+  </nav>
+
+  <!-- ═══════════════ SCORE PANEL ═══════════════ -->
+  <div id="score-panel">
+    <h2>📊 交卷成绩</h2>
+    <div class="big-score" id="total-score">--</div>
+    <table id="score-breakdown"></table>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- 一、单选题 -->
+  <!-- ================================================================== -->
+  <section class="section" id="s1">
+    <div class="section-head">
+      <span class="section-num">一</span>
+      <h2>单选题</h2>
+      <span class="score-tag">15题 × 2分 = 30分</span>
+    </div>
+    <p style="color:var(--muted);margin-bottom:16px;">每题只有一个正确选项，请将答案填入题号前的括号内。</p>
+
+    <!-- Q1 -->
+    <div class="q" data-type="single" data-answer="B" data-score="2">
+      <p class="q-text"><span class="q-num">1.</span>在 Python 中，以下哪个选项可以正确打开一个 UTF-8 编码的文件并读取所有行？</p>
+      <div class="opts">
+        <label><input type="radio" name="q1" value="A">A. <code>open("f.txt", "r")</code></label>
+        <label><input type="radio" name="q1" value="B">B. <code>open("f.txt", "r", encoding="utf-8")</code></label>
+        <label><input type="radio" name="q1" value="C">C. <code>FileReader("f.txt", "utf-8")</code></label>
+        <label><input type="radio" name="q1" value="D">D. <code>open("f.txt", encoding="utf-8")</code></label>
+      </div>
+      <div class="feedback" data-for="q1"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q" data-type="single" data-answer="C" data-score="2">
+      <p class="q-text"><span class="q-num">2.</span>FastAPI 中，<code>Depends(get_db)</code> 的作用是什么？</p>
+      <div class="opts">
+        <label><input type="radio" name="q2" value="A">A. 创建一个新的数据库连接池</label>
+        <label><input type="radio" name="q2" value="B">B. 把 get_db 函数的返回值缓存起来</label>
+        <label><input type="radio" name="q2" value="C">C. 依赖注入：FastAPI 自动调用 get_db 并将返回值传给路由函数</label>
+        <label><input type="radio" name="q2" value="D">D. 声明该路由需要数据库权限</label>
+      </div>
+      <div class="feedback" data-for="q2"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="q" data-type="single" data-answer="A" data-score="2">
+      <p class="q-text"><span class="q-num">3.</span>Pydantic 的 <code>BaseModel</code> 在 FastAPI 项目中的角色类似于 Java 中的什么？</p>
+      <div class="opts">
+        <label><input type="radio" name="q3" value="A">A. DTO（Data Transfer Object）+ Validation</label>
+        <label><input type="radio" name="q3" value="B">B. JPA Entity</label>
+        <label><input type="radio" name="q3" value="C">C. Service 层</label>
+        <label><input type="radio" name="q3" value="D">D. Controller 层</label>
+      </div>
+      <div class="feedback" data-for="q3"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="q" data-type="single" data-answer="B" data-score="2">
+      <p class="q-text"><span class="q-num">4.</span>Chat Completions API 的 messages 数组中，<code>role</code> 字段不包含以下哪个值？</p>
+      <div class="opts">
+        <label><input type="radio" name="q4" value="A">A. system</label>
+        <label><input type="radio" name="q4" value="B">B. admin</label>
+        <label><input type="radio" name="q4" value="C">C. user</label>
+        <label><input type="radio" name="q4" value="D">D. assistant</label>
+      </div>
+      <div class="feedback" data-for="q4"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="q" data-type="single" data-answer="D" data-score="2">
+      <p class="q-text"><span class="q-num">5.</span>在 LLM 调用中，<code>temperature=0.0</code> 表示什么？</p>
+      <div class="opts">
+        <label><input type="radio" name="q5" value="A">A. 模型温度最低，输出速度最快</label>
+        <label><input type="radio" name="q5" value="B">B. 模型不会输出任何内容</label>
+        <label><input type="radio" name="q5" value="C">C. 模型自由发挥，最有创造性</label>
+        <label><input type="radio" name="q5" value="D">D. 输出最确定，每次结果几乎相同</label>
+      </div>
+      <div class="feedback" data-for="q5"></div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="q" data-type="single" data-answer="C" data-score="2">
+      <p class="q-text"><span class="q-num">6.</span>LangChain 中 <code>StrOutputParser()</code> 的主要作用是什么？</p>
+      <div class="opts">
+        <label><input type="radio" name="q6" value="A">A. 验证 LLM 输出是否为合法 JSON</label>
+        <label><input type="radio" name="q6" value="B">B. 将输入字符串解析为 Prompt 变量</label>
+        <label><input type="radio" name="q6" value="C">C. 将模型的 AIMessage 对象转换为纯字符串</label>
+        <label><input type="radio" name="q6" value="D">D. 格式化字符串的输出缩进</label>
+      </div>
+      <div class="feedback" data-for="q6"></div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="q" data-type="single" data-answer="A" data-score="2">
+      <p class="q-text"><span class="q-num">7.</span>Chain 和 Agent 的核心区别是什么？</p>
+      <div class="opts">
+        <label><input type="radio" name="q7" value="A">A. Chain 固定执行路径；Agent 可根据输入自主决定调用哪些工具</label>
+        <label><input type="radio" name="q7" value="B">B. Chain 只能用于数据库操作；Agent 只能调用 LLM</label>
+        <label><input type="radio" name="q7" value="C">C. Chain 需要 API Key；Agent 不需要</label>
+        <label><input type="radio" name="q7" value="D">D. 二者完全等价，只是名字不同</label>
+      </div>
+      <div class="feedback" data-for="q7"></div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="q" data-type="single" data-answer="B" data-score="2">
+      <p class="q-text"><span class="q-num">8.</span>在 LangChain 中使用 Memory 时，<code>session_id</code> 的核心作用是什么？</p>
+      <div class="opts">
+        <label><input type="radio" name="q8" value="A">A. 设置 LLM 的温度参数</label>
+        <label><input type="radio" name="q8" value="B">B. 区分不同用户或不同对话的历史记录</label>
+        <label><input type="radio" name="q8" value="C">C. 指定使用哪个 LLM 模型</label>
+        <label><input type="radio" name="q8" value="D">D. 控制 token 消耗上限</label>
+      </div>
+      <div class="feedback" data-for="q8"></div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="q" data-type="single" data-answer="D" data-score="2">
+      <p class="q-text"><span class="q-num">9.</span>LangGraph 的 <code>StateGraph</code> 中，节点之间通过什么来共享数据？</p>
+      <div class="opts">
+        <label><input type="radio" name="q9" value="A">A. 全局变量 <code>global state</code></label>
+        <label><input type="radio" name="q9" value="B">B. 数据库持久化存储</label>
+        <label><input type="radio" name="q9" value="C">C. HTTP 请求的 Header</label>
+        <label><input type="radio" name="q9" value="D">D. 一个共享的 TypedDict State 对象，每个节点返回部分更新</label>
+      </div>
+      <div class="feedback" data-for="q9"></div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="q" data-type="single" data-answer="C" data-score="2">
+      <p class="q-text"><span class="q-num">10.</span>Freesky 项目中，P5 的 <code>@retry_on_failure(max_retries=3)</code> 装饰器采用什么重试策略？</p>
+      <div class="opts">
+        <label><input type="radio" name="q10" value="A">A. 固定间隔：每次等待 2 秒</label>
+        <label><input type="radio" name="q10" value="B">B. 立即重试：失败后马上重试</label>
+        <label><input type="radio" name="q10" value="C">C. 指数退避：2s → 4s → 8s</label>
+        <label><input type="radio" name="q10" value="D">D. 随机间隔：每次随机等待 1-5 秒</label>
+      </div>
+      <div class="feedback" data-for="q10"></div>
+    </div>
+
+    <!-- Q11 -->
+    <div class="q" data-type="single" data-answer="A" data-score="2">
+      <p class="q-text"><span class="q-num">11.</span>在 Freesky 的技术边界中，以下哪项是正确的职责划分？</p>
+      <div class="opts">
+        <label><input type="radio" name="q11" value="A">A. Java 负责业务 CRUD + API Key 管理，Python 负责 Agent 编排 + LLM 调用</label>
+        <label><input type="radio" name="q11" value="B">B. Java 负责 LLM 调用，Python 负责数据库操作</label>
+        <label><input type="radio" name="q11" value="C">C. 前端直接调用 Python Agent 服务，不经过 Java</label>
+        <label><input type="radio" name="q11" value="D">D. Python 存储用户数据，Java 只做 API 转发</label>
+      </div>
+      <div class="feedback" data-for="q11"></div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="q" data-type="single" data-answer="B" data-score="2">
+      <p class="q-text"><span class="q-num">12.</span>SQLAlchemy 中 <code>sessionmaker(autocommit=False, autoflush=False)</code> 的含义是？</p>
+      <div class="opts">
+        <label><input type="radio" name="q12" value="A">A. 每条 SQL 自动提交，自动刷新</label>
+        <label><input type="radio" name="q12" value="B">B. 手动控制 commit，手动控制 flush 时机</label>
+        <label><input type="radio" name="q12" value="C">C. 禁止任何写操作</label>
+        <label><input type="radio" name="q12" value="D">D. 每次查询前自动提交未完成的事务</label>
+      </div>
+      <div class="feedback" data-for="q12"></div>
+    </div>
+
+    <!-- Q13 -->
+    <div class="q" data-type="single" data-answer="C" data-score="2">
+      <p class="q-text"><span class="q-num">13.</span>P5 的 <code>WriterAgent</code> 写第 N 章时，<code>build_writer_context()</code> 会拼接哪些上下文？</p>
+      <div class="opts">
+        <label><input type="radio" name="q13" value="A">A. 只拼接第 N-1 章的正文</label>
+        <label><input type="radio" name="q13" value="B">B. 只拼接灵感和大纲</label>
+        <label><input type="radio" name="q13" value="C">C. 拼接灵感 + 大纲 + 人物 + 世界观 + 前 N-1 章摘要</label>
+        <label><input type="radio" name="q13" value="D">D. 拼接整个数据库的所有内容</label>
+      </div>
+      <div class="feedback" data-for="q13"></div>
+    </div>
+
+    <!-- Q14 -->
+    <div class="q" data-type="single" data-answer="D" data-score="2">
+      <p class="q-text"><span class="q-num">14.</span><code>init_chat_model</code> 中 <code>model_provider="openai"</code> 参数的作用是什么？</p>
+      <div class="opts">
+        <label><input type="radio" name="q14" value="A">A. 强制使用 OpenAI 的 GPT-4 模型</label>
+        <label><input type="radio" name="q14" value="B">B. 要求 API Key 必须是 OpenAI 签发的</label>
+        <label><input type="radio" name="q14" value="C">C. 打开 LangChain 的调试模式</label>
+        <label><input type="radio" name="q14" value="D">D. 告诉 LangChain 使用 OpenAI 兼容的 API 协议（可对接 Ollama / DeepSeek 等）</label>
+      </div>
+      <div class="feedback" data-for="q14"></div>
+    </div>
+
+    <!-- Q15 -->
+    <div class="q" data-type="single" data-answer="A" data-score="2">
+      <p class="q-text"><span class="q-num">15.</span>P5 的工作流中，Agent 的执行顺序是怎样的？</p>
+      <div class="opts">
+        <label><input type="radio" name="q15" value="A">A. START → orchestrator → outline → character → worldbuilding → writer → END</label>
+        <label><input type="radio" name="q15" value="B">B. 所有 Agent 并行执行，取最快的结果</label>
+        <label><input type="radio" name="q15" value="C">C. writer → outline → character → worldbuilding → orchestrator</label>
+        <label><input type="radio" name="q15" value="D">D. 用户每次手动选择下一个要执行的 Agent</label>
+      </div>
+      <div class="feedback" data-for="q15"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- 二、判断题 -->
+  <!-- ================================================================== -->
+  <section class="section" id="s2">
+    <div class="section-head">
+      <span class="section-num">二</span>
+      <h2>判断题</h2>
+      <span class="score-tag">10题 × 1分 = 10分</span>
+    </div>
+    <p style="color:var(--muted);margin-bottom:16px;">正确的打 ✓，错误的打 ✗。</p>
+
+    <div class="q" data-type="tf" data-answer="false" data-score="1">
+      <p class="q-text"><span class="q-num">1.</span>Python 的 <code>list</code> 和 Java 的 <code>List&lt;T&gt;</code> 一样，必须在声明时指定元素类型。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf1" value="true">✓ 正确</label><label><input type="radio" name="tf1" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf1"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="true" data-score="1">
+      <p class="q-text"><span class="q-num">2.</span>FastAPI 的 Swagger 文档（<code>/docs</code>）可以替代 Postman 进行 HTTP 接口测试。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf2" value="true">✓ 正确</label><label><input type="radio" name="tf2" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf2"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="false" data-score="1">
+      <p class="q-text"><span class="q-num">3.</span>LLM 的 System Prompt 和 User Message 在底层协议中没有区别，都是普通文本。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf3" value="true">✓ 正确</label><label><input type="radio" name="tf3" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf3"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="true" data-score="1">
+      <p class="q-text"><span class="q-num">4.</span><code>stream=True</code> 时，LLM 会逐 token 返回内容，而不是等全部生成完再一次性返回。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf4" value="true">✓ 正确</label><label><input type="radio" name="tf4" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf4"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="false" data-score="1">
+      <p class="q-text"><span class="q-num">5.</span>LangChain 的 <code>InMemoryChatMessageHistory</code> 在服务重启后历史记录仍然保留。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf5" value="true">✓ 正确</label><label><input type="radio" name="tf5" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf5"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="true" data-score="1">
+      <p class="q-text"><span class="q-num">6.</span>LangGraph 中，每个 Agent 节点返回的 dict 只需要包含自己更新的字段，LangGraph 会自动合并到共享 State 中。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf6" value="true">✓ 正确</label><label><input type="radio" name="tf6" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf6"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="false" data-score="1">
+      <p class="q-text"><span class="q-num">7.</span>P5 的 <code>BaseAgent</code> 是一个具体实现类，可以直接实例化使用。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf7" value="true">✓ 正确</label><label><input type="radio" name="tf7" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf7"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="true" data-score="1">
+      <p class="q-text"><span class="q-num">8.</span>Freesky 项目的 Phase A 目标是"跑通核心链路"而非"做出可用产品"。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf8" value="true">✓ 正确</label><label><input type="radio" name="tf8" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf8"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="false" data-score="1">
+      <p class="q-text"><span class="q-num">9.</span>在 Freesky 架构中，前端可以直接调用 Python Agent 服务来获取流式输出。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf9" value="true">✓ 正确</label><label><input type="radio" name="tf9" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf9"></div>
+    </div>
+
+    <div class="q" data-type="tf" data-answer="true" data-score="1">
+      <p class="q-text"><span class="q-num">10.</span>P5 的 <code>CharacterAgent</code> 在设计人物时，能同时看到灵感和大纲，而 <code>WorldbuildingAgent</code> 还能额外看到人物档案。</p>
+      <div class="tf-opts"><label><input type="radio" name="tf10" value="true">✓ 正确</label><label><input type="radio" name="tf10" value="false">✗ 错误</label></div>
+      <div class="feedback" data-for="tf10"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- 三、填空题 -->
+  <!-- ================================================================== -->
+  <section class="section" id="s3">
+    <div class="section-head">
+      <span class="section-num">三</span>
+      <h2>填空题</h2>
+      <span class="score-tag">10空 × 2分 = 20分</span>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="def" data-score="2">
+      <p class="q-text"><span class="q-num">1.</span>Python 中定义函数的关键字是 <input class="blank-input" data-key="b1" placeholder="______">。</p>
+      <div class="feedback" data-for="b1"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="Pydantic" data-score="2">
+      <p class="q-text"><span class="q-num">2.</span>FastAPI 中用于请求体校验的库是 <input class="blank-input" data-key="b2" placeholder="______">，它的核心类是 <code>BaseModel</code>。</p>
+      <div class="feedback" data-for="b2"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="system" data-score="2">
+      <p class="q-text"><span class="q-num">3.</span>Chat Completions API 中，用于设定 AI 人设和行为的 role 是 <input class="blank-input" data-key="b3" placeholder="______">。</p>
+      <div class="feedback" data-for="b3"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="temperature" data-score="2">
+      <p class="q-text"><span class="q-num">4.</span>控制 LLM 输出创造性（0=保守，1=放飞）的参数叫 <input class="blank-input" data-key="b4" placeholder="______">。</p>
+      <div class="feedback" data-for="b4"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="LangGraph" data-score="2">
+      <p class="q-text"><span class="q-num">5.</span>P5 中用于编排多 Agent 工作流的框架是 <input class="blank-input" data-key="b5" placeholder="______">，其核心类是 <code>StateGraph</code>。</p>
+      <div class="feedback" data-for="b5"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="TypedDict" data-score="2">
+      <p class="q-text"><span class="q-num">6.</span>P5 中 <code>NovelState</code> 继承自 Python 的 <input class="blank-input" data-key="b6" placeholder="______">，用于定义共享状态的字段和类型。</p>
+      <div class="feedback" data-for="b6"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="add_messages" data-score="2">
+      <p class="q-text"><span class="q-num">7.</span>LangGraph 中对 <code>messages</code> 字段使用了 <input class="blank-input" data-key="b7" placeholder="______"> 注解，使得多个节点追加消息而非覆盖。</p>
+      <div class="feedback" data-for="b7"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="ABC" data-score="2">
+      <p class="q-text"><span class="q-num">8.</span>P5 中 <code>BaseAgent</code> 继承自 <input class="blank-input" data-key="b8" placeholder="______">（填写 Python 标准库模块名），声明 <code>invoke</code> 为抽象方法。</p>
+      <div class="feedback" data-for="b8"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="SSE" data-score="2">
+      <p class="q-text"><span class="q-num">9.</span>Java 后端和 Python Agent 服务之间，除了普通 HTTP REST 外，还使用 <input class="blank-input" data-key="b9" placeholder="______"> 协议实现流式输出的推送。</p>
+      <div class="feedback" data-for="b9"></div>
+    </div>
+
+    <div class="q" data-type="blank" data-answer="Orchestrator" data-score="2">
+      <p class="q-text"><span class="q-num">10.</span>Freesky 的多 Agent 架构中，负责分析灵感、规划创作任务的主编 Agent 叫 <input class="blank-input" data-key="b10" placeholder="______">。</p>
+      <div class="feedback" data-for="b10"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- 四、代码输出预测 -->
+  <!-- ================================================================== -->
+  <section class="section" id="s4">
+    <div class="section-head">
+      <span class="section-num">四</span>
+      <h2>代码输出预测</h2>
+      <span class="score-tag">3题 × 5分 = 15分</span>
+    </div>
+    <p style="color:var(--muted);margin-bottom:16px;">阅读以下 Python 代码，写出程序的输出结果。</p>
+
+    <!-- C1 -->
+    <div class="q">
+      <p class="q-text"><span class="q-num">1.</span>（5分）以下代码的输出是什么？</p>
+      <pre>def format_idea(line: str) -> str:
+    return f"灵感: {line.strip()}"
+
+ideas = [" 穿越修真界 ", "", "获得仇恨面板"]
+result = [format_idea(i) for i in ideas if i.strip()]
+print(result)</pre>
+      <textarea class="answer" data-type="code-output" data-key="c1" placeholder="请写出输出结果..."></textarea>
+    </div>
+
+    <!-- C2 -->
+    <div class="q">
+      <p class="q-text"><span class="q-num">2.</span>（5分）以下 FastAPI 路由收到 <code>GET /skies/5</code> 且数据库中存在 id=5 的记录时，响应体大致是什么结构？</p>
+      <pre>@router.get("/skies/{sky_id}", response_model=SkyOut)
+def read_sky(sky_id: int, db: Session = Depends(get_db)):
+    sky = db.query(SkyItem).filter(SkyItem.id == sky_id).first()
+    if not sky:
+        raise HTTPException(status_code=404, detail="Sky not found")
+    return sky</pre>
+      <textarea class="answer" data-type="code-output" data-key="c2" placeholder="请写出大致响应结构..."></textarea>
+    </div>
+
+    <!-- C3 -->
+    <div class="q">
+      <p class="q-text"><span class="q-num">3.</span>（5分）在 P5 的 LangGraph 工作流中，<code>WriterAgent.invoke()</code> 被调用时 <code>current_chapter=1</code> 且 <code>chapters=[]</code>。请描述该方法返回的 dict 中各字段的值（不需要具体正文内容，描述数据结构即可）。</p>
+      <textarea class="answer" data-type="code-output" data-key="c3" placeholder="请描述返回的 dict 结构..."></textarea>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- 五、简答题 -->
+  <!-- ================================================================== -->
+  <section class="section" id="s5">
+    <div class="section-head">
+      <span class="section-num">五</span>
+      <h2>简答题</h2>
+      <span class="score-tag">3题 × 5分 = 15分</span>
+    </div>
+
+    <div class="q">
+      <p class="q-text"><span class="q-num">1.</span>（5分）请解释 LangChain 中 <b>LCEL（LangChain Expression Language）</b> 的核心思想，并用 <code>|</code> 管道符号写出一条包含 Prompt、Model、Parser 三个组件的 Chain。说明这种方式相比 P3 中 raw openai SDK 调用的优势。</p>
+      <textarea class="answer" data-type="short-answer" data-key="s1" placeholder="请作答..."></textarea>
+    </div>
+
+    <div class="q">
+      <p class="q-text"><span class="q-num">2.</span>（5分）Freesky 项目的技术边界是"Java 不直接调 LLM，Python 不存业务数据"。请分析这样划分的原因，并说明 Java 和 Python 分别承担哪些职责。</p>
+      <textarea class="answer" data-type="short-answer" data-key="s2" placeholder="请作答..."></textarea>
+    </div>
+
+    <div class="q">
+      <p class="q-text"><span class="q-num">3.</span>（5分）P5 中 <code>build_writer_context()</code> 函数的作用是什么？它拼接了哪些信息？为什么写第 N 章时只取前文章节的"摘要"（前300字）而不是完整正文？这与 LLM 的什么限制有关？</p>
+      <textarea class="answer tall" data-type="short-answer" data-key="s3" placeholder="请作答..."></textarea>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- 六、编程设计题 -->
+  <!-- ================================================================== -->
+  <section class="section" id="s6">
+    <div class="section-head">
+      <span class="section-num">六</span>
+      <h2>编程设计题</h2>
+      <span class="score-tag">1题 × 10分 = 10分</span>
+    </div>
+
+    <div class="q">
+      <p class="q-text"><span class="q-num">1.</span>（10分）假设要新增一个 <b>"润稿 Agent"（PolisherAgent）</b>，放在 WriterAgent 之后执行。它的职责是：拿到 WriterAgent 刚写的章节正文，进行文笔润色（修正语病、优化表达、统一文风）。</p>
+      <p style="margin-top:8px;">请完成以下设计：</p>
+      <ol style="margin:8px 0 8px 24px; line-height:2;">
+        <li>写出 <code>PolisherAgent</code> 的 System Prompt（3分）</li>
+        <li>写出 <code>invoke()</code> 方法的核心逻辑（伪代码即可，需说明从 state 中读什么、返回什么）（4分）</li>
+        <li>画出修改后的 LangGraph 工作流（START → ... → END，用箭头表示）（3分）</li>
+      </ol>
+      <textarea class="answer tall" data-type="design" data-key="d1" placeholder="请完成设计...&#10;&#10;1. System Prompt:&#10;&#10;2. invoke() 伪代码:&#10;&#10;3. 工作流:"></textarea>
+    </div>
+  </section>
+
+  <!-- ═══════════════ ACTION BAR ═══════════════ -->
+  <div class="action-bar no-print">
+    <button class="btn-primary" onclick="submitExam()">📝 交卷评分</button>
+    <button class="btn-outline" onclick="resetExam()">🔄 重新作答</button>
+    <button class="btn-outline" onclick="window.print()">🖨 打印试卷</button>
+  </div>
+
+</div><!-- /shell -->
+
+<!-- ================================================================== -->
+<!-- SCRIPTS -->
+<!-- ================================================================== -->
+<script>
+// ── Timer ──
+let totalSeconds = 90 * 60;
+let timerInterval = null;
+let timerRunning = false;
+
+function updateDisplay() {
+  const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const s = String(totalSeconds % 60).padStart(2, '0');
+  document.getElementById('time-display').textContent = m + ':' + s;
+  const timer = document.getElementById('timer');
+  timer.classList.remove('warning', 'danger');
+  if (totalSeconds <= 300) timer.classList.add('danger');
+  else if (totalSeconds <= 900) timer.classList.add('warning');
+}
+
+function startTimer() {
+  if (timerRunning) return;
+  timerRunning = true;
+  timerInterval = setInterval(() => {
+    if (totalSeconds <= 0) {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      alert('⏰ 考试时间到！系统将自动交卷。');
+      submitExam();
+      return;
+    }
+    totalSeconds--;
+    updateDisplay();
+  }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+}
+
+updateDisplay();
+
+// ── Scoring logic ──
+const CORRECT_ANSWERS = {
+  // 单选题
+  q1:"B", q2:"C", q3:"A", q4:"B", q5:"D", q6:"C", q7:"A",
+  q8:"B", q9:"D", q10:"C", q11:"A", q12:"B", q13:"C", q14:"D", q15:"A",
+  // 判断题
+  tf1:"false", tf2:"true", tf3:"false", tf4:"true", tf5:"false",
+  tf6:"true", tf7:"false", tf8:"true", tf9:"false", tf10:"true",
+  // 填空题 (case-insensitive)
+  b1:"def", b2:"pydantic", b3:"system", b4:"temperature",
+  b5:"langgraph", b6:"typeddict", b7:"add_messages", b8:"abc",
+  b9:"sse", b10:"orchestrator",
+};
+
+function submitExam() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+
+  let scores = { single: 0, tf: 0, blank: 0, codeOutput: 0, shortAnswer: 0, design: 0 };
+
+  // ── 单选题 ──
+  document.querySelectorAll('#s1 .q[data-type="single"]').forEach(q => {
+    const name = q.querySelector('input[type="radio"]').name;
+    const correct = q.dataset.answer;
+    const selected = document.querySelector(`input[name="${name}"]:checked`);
+    const fb = q.querySelector('.feedback');
+    if (selected && selected.value === correct) {
+      scores.single += parseInt(q.dataset.score);
+      if (fb) { fb.className = 'feedback correct show'; fb.textContent = '✓ 正确'; }
+    } else {
+      if (fb) { fb.className = 'feedback wrong show'; fb.textContent = '✗ 正确答案是 ' + correct; }
+    }
+  });
+
+  // ── 判断题 ──
+  document.querySelectorAll('#s2 .q[data-type="tf"]').forEach(q => {
+    const name = q.querySelector('input[type="radio"]').name;
+    const correct = q.dataset.answer;
+    const selected = document.querySelector(`input[name="${name}"]:checked`);
+    const fb = q.querySelector('.feedback');
+    if (selected && selected.value === correct) {
+      scores.tf += parseInt(q.dataset.score);
+      if (fb) { fb.className = 'feedback correct show'; fb.textContent = '✓ 正确'; }
+    } else {
+      const label = correct === 'true' ? '✓ 正确' : '✗ 错误';
+      if (fb) { fb.className = 'feedback wrong show'; fb.textContent = '✗ 正确答案是 ' + label; }
+    }
+  });
+
+  // ── 填空题 ──
+  document.querySelectorAll('#s3 .q[data-type="blank"]').forEach(q => {
+    const key = q.querySelector('.blank-input').dataset.key;
+    const correct = CORRECT_ANSWERS[key] || '';
+    const input = q.querySelector('.blank-input');
+    const userAnswer = input.value.trim().toLowerCase();
+    const fb = q.querySelector('.feedback');
+    if (userAnswer === correct.toLowerCase()) {
+      scores.blank += parseInt(q.dataset.score);
+      if (fb) { fb.className = 'feedback correct show'; fb.textContent = '✓ 正确'; }
+    } else {
+      if (fb) { fb.className = 'feedback wrong show'; fb.textContent = '✗ 正确答案是 ' + q.dataset.answer; }
+    }
+  });
+
+  // ── 代码输出预测 / 简答 / 设计 暂不自动评分, 给提示 ──
+  document.querySelectorAll('#s4 .q, #s5 .q, #s6 .q').forEach(q => {
+    const ta = q.querySelector('textarea');
+    if (ta && ta.value.trim()) {
+      const fb = q.querySelector('.feedback');
+      if (!fb) {
+        const div = document.createElement('div');
+        div.className = 'feedback show';
+        div.style.background = '#fff8df';
+        div.style.borderLeft = '3px solid var(--gold)';
+        div.style.color = '#6b4e00';
+        div.textContent = '⚠ 本题需人工批改（已保存你的作答）';
+        q.appendChild(div);
+      }
+    }
+  });
+
+  // ── 计算总分 ──
+  const objectiveTotal = scores.single + scores.tf + scores.blank;
+  const subjectiveMax = 15 + 15 + 10; // 代码输出 + 简答 + 设计
+  const objectiveMax = 30 + 10 + 20;   // 单选 + 判断 + 填空
+
+  // ── 展示成绩 ──
+  const panel = document.getElementById('score-panel');
+  panel.style.display = 'block';
+  document.getElementById('total-score').textContent = objectiveTotal + ' / ' + objectiveMax + ' (客观题)';
+
+  document.getElementById('score-breakdown').innerHTML = `
+    <tr><td>一、单选题</td><td>${scores.single} / 30</td></tr>
+    <tr><td>二、判断题</td><td>${scores.tf} / 10</td></tr>
+    <tr><td>三、填空题</td><td>${scores.blank} / 20</td></tr>
+    <tr style="border-top:2px solid var(--teal)"><td><strong>客观题合计</strong></td><td><strong>${objectiveTotal} / ${objectiveMax}</strong></td></tr>
+    <tr><td colspan="2" style="color:var(--muted);padding-top:8px;">四/五/六为主观题，需人工批改（共 ${subjectiveMax} 分）</td></tr>
+  `;
+
+  panel.scrollIntoView({ behavior: 'smooth' });
+
+  // 保存作答到 localStorage
+  saveAnswers();
+}
+
+function resetExam() {
+  if (confirm('确定要清除所有作答并重新开始吗？此操作不可撤销。')) {
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.querySelectorAll('.blank-input').forEach(i => i.value = '');
+    document.querySelectorAll('textarea').forEach(t => t.value = '');
+    document.querySelectorAll('.feedback').forEach(f => { f.className = 'feedback'; f.textContent = ''; });
+    document.getElementById('score-panel').style.display = 'none';
+    totalSeconds = 90 * 60;
+    updateDisplay();
+    clearInterval(timerInterval);
+    timerRunning = false;
+    localStorage.removeItem('freesky-exam-answers');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+// ── Auto-save ──
+function saveAnswers() {
+  const data = {};
+  document.querySelectorAll('input[type="radio"]:checked').forEach(r => { data[r.name] = r.value; });
+  document.querySelectorAll('.blank-input').forEach(i => { if (i.value.trim()) data['blank_' + i.dataset.key] = i.value; });
+  document.querySelectorAll('textarea').forEach(t => { if (t.value.trim()) data['text_' + (t.dataset.key || t.closest('.q')?.querySelector('.q-num')?.textContent?.trim())] = t.value; });
+  localStorage.setItem('freesky-exam-answers', JSON.stringify(data));
+}
+
+// Auto-save every 10 seconds
+setInterval(saveAnswers, 10000);
+
+// Restore saved answers on load
+try {
+  const saved = JSON.parse(localStorage.getItem('freesky-exam-answers') || '{}');
+  Object.entries(saved).forEach(([key, val]) => {
+    if (key.startsWith('blank_')) {
+      const input = document.querySelector(`.blank-input[data-key="${key.replace('blank_', '')}"]`);
+      if (input && !input.value) input.value = val;
+    } else if (key.startsWith('text_')) {
+      // Skip textarea restore to avoid overwriting intentional clears
+    } else {
+      const radio = document.querySelector(`input[name="${key}"][value="${val}"]`);
+      if (radio) radio.checked = true;
+    }
+  });
+} catch(e) {}
+
+// Keyboard shortcut: Ctrl+Enter to submit
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    submitExam();
+  }
+});
+</script>
+
+</body>
+</html>

@@ -55,8 +55,15 @@ class CharacterAgent(BaseAgent):
         self._log(f"现有人物{len(existing)}个，设定{len(world_settings)}条，准备设计人物...")
 
         result = self._call_llm_json(prompt)
+        self._validate_result(result, {
+            "new_characters": list,
+            "consistency_check": str,
+            "summary": str,
+        }, "character")
 
         new_chars = result.get("new_characters", [])
+        if any(not isinstance(character, dict) for character in new_chars):
+            raise ValueError("character field new_characters must contain objects")
         consistency = result.get("consistency_check", "")
         summary = result.get("summary", "")
         print(f"  [CharacterAgent] +{len(new_chars)}个人物 | {summary}")

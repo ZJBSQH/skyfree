@@ -54,27 +54,26 @@ class WriterAgent(BaseAgent):
         self._log(f"撰写第{chapter_num}章" if not is_revision else f"根据审核意见修改第{chapter_num}章...")
 
         result = self._call_llm_json(prompt)
+        self._validate_result(result, {
+            "chapter_id": str,
+            "chapter_title": str,
+            "content": str,
+            "self_check": dict,
+        }, "writer")
 
         chapter_content = result.get("content", "")
         chapter_title = result.get("chapter_title", "")
         chapter_id = result.get("chapter_id", "")
         self_check = result.get("self_check", {})
+        if not chapter_content.strip():
+            raise ValueError("writer field content must not be empty")
         print(f"  [WriterAgent] {chapter_id} {chapter_title} ({len(chapter_content)}字)")
 
-        if is_revision:
-            # 修改模式：只更新当前草稿，不追加 completed
-            return {
-                "current_draft": chapter_content,
-                "messages": [f"[WriterAgent] 修改 {chapter_id} {chapter_title}: {len(chapter_content)}字"],
-            }
-        else:
-            # 新章模式：追加到 completed_chapters
-            new_completed = completed + [chapter_content]
-            return {
-                "current_draft": chapter_content,
-                "completed_chapters": new_completed,
-                "messages": [f"[WriterAgent] {chapter_id} {chapter_title}: {len(chapter_content)}字"],
-            }
+        action = "修改" if is_revision else "草拟"
+        return {
+            "current_draft": chapter_content,
+            "messages": [f"[WriterAgent] {action} {chapter_id} {chapter_title}: {len(chapter_content)}字"],
+        }
 
     def _build_user_prompt(self, user_request: str, plot_outline: list,
                            characters: list, world_settings: list,

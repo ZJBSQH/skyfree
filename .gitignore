@@ -16,6 +16,7 @@ venv/
 # IDE
 .vscode/
 .idea/
+*.iml
 
 # OS
 .DS_Store
@@ -34,3 +35,6 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Independent study repository
+study/p2/fastapi-todo-ref/
