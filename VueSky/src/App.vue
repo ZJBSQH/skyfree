@@ -42,6 +42,10 @@ const selectedCharacter = computed(() =>
 )
 const isDesktop = computed(() => viewportWidth.value >= 1180)
 const isMobile = computed(() => viewportWidth.value < 760)
+const isCompactTopbar = computed(() => viewportWidth.value <= 420)
+const inspectorElapsedSeconds = computed(() =>
+  status.value === 'idle' ? null : elapsedSeconds.value
+)
 
 watch(result, () => {
   if (selectedContent.value.type === 'chapter' && selectedChapter.value === undefined) {
@@ -142,7 +146,7 @@ onBeforeUnmount(() => {
     <ProjectNavigator v-if="!isMobile" :result="result" :selection="selectedContent" @select="selectContent" />
 
     <main class="studio-canvas" :data-content-selection="selectedContent.type">
-      <header class="topbar">
+      <header class="topbar" :class="{ 'topbar--compact': isCompactTopbar }">
         <div>
           <p class="product">Freesky</p>
           <h1>Novel workspace</h1>
@@ -223,7 +227,7 @@ onBeforeUnmount(() => {
         :connected="connected"
         :status="status"
         :token-usage="tokenUsage"
-        :elapsed-seconds="elapsedSeconds"
+        :elapsed-seconds="inspectorElapsedSeconds"
         :review-round="result?.review_round ?? null"
         :completed-chapter-count="result?.completed_chapters.length ?? null"
       />
@@ -260,7 +264,7 @@ onBeforeUnmount(() => {
         :connected="connected"
         :status="status"
         :token-usage="tokenUsage"
-        :elapsed-seconds="elapsedSeconds"
+        :elapsed-seconds="inspectorElapsedSeconds"
         :review-round="result?.review_round ?? null"
         :completed-chapter-count="result?.completed_chapters.length ?? null"
         dismissible

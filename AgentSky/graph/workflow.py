@@ -4,7 +4,7 @@
     START → supervisor → setting / character / plot / writer / END
     setting / character / plot → supervisor (固定边，汇报)
     writer → reviewer (固定边，写完必审)
-    reviewer → supervisor (未通过) / END (通过)
+    reviewer → supervisor（统一提交章节、决定返工或结束）
 """
 
 from langgraph.graph import StateGraph, START, END
@@ -55,25 +55,34 @@ def supervisor_node(state: AgentSkyState) -> Command:
     target = result.pop("next_action", "finish")
     goto = target if target in VALID_NODES else END
     print(f"  [Command] supervisor → {goto}")
-    return Command(goto=goto, update=result)
+    return Command(
+        goto=goto,
+        update=result
+        )
 
 
 def setting_node(state: AgentSkyState) -> dict:
     """设定师节点 — 构建/修改世界观设定"""
     agent = _AGENTS["setting"]
-    return agent.invoke(state)
+    return _mark_review_repair_complete(state, agent.invoke(state))
 
 
 def character_node(state: AgentSkyState) -> dict:
     """人物节点 — 设计/修改人物卡"""
     agent = _AGENTS["character"]
-    return agent.invoke(state)
+    return _mark_review_repair_complete(state, agent.invoke(state))
 
 
 def plot_node(state: AgentSkyState) -> dict:
     """剧情节点 — 设计/修改大纲和伏笔"""
     agent = _AGENTS["plot"]
-    return agent.invoke(state)
+    return _mark_review_repair_complete(state, agent.invoke(state))
+
+
+def _mark_review_repair_complete(state: AgentSkyState, result: dict) -> dict:
+    if state.get("phase") != "review":
+        return result
+    return {**result, "phase": "review_repair_done"}
 
 
 def writer_node(state: AgentSkyState) -> dict:
@@ -83,14 +92,18 @@ def writer_node(state: AgentSkyState) -> dict:
 
 
 def reviewer_node(state: AgentSkyState) -> Command:
-    """审核节点 — 通过/超轮次→END，否则回 supervisor"""
+    """审核节点 — 始终回 supervisor 统一提交章节并决定后续路由。"""
     result = _AGENTS["reviewer"].invoke(state)
     passed = result.get("review_passed", False)
     review_round = result.get("review_round", 0)
-    max_rounds = state.get("max_review_rounds", 3)
-    goto = END if (passed or review_round >= max_rounds) else "supervisor"
-    print(f"  [Command] reviewer → {goto} (passed={passed}, round={review_round})")
-    return Command(goto=goto, update=result)
+
+
+    # 一律回 supervisor，由主编统一决定：finish / 下一章 / 修复循环
+    print(f"  [Command] reviewer → supervisor (passed={passed}, round={review_round})")
+    return Command(
+        goto="supervisor",
+        update=result
+        )
 
 
 # ═══════════════════════════════════════════════════════════════

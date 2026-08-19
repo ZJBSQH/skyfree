@@ -224,6 +224,33 @@ describe('App', () => {
     })
   })
 
+  it('shows an unavailable duration before a run starts', async () => {
+    setViewport(1180)
+    stubHealthyConnection()
+
+    render(App)
+
+    await screen.findAllByText('Connected')
+    expect(screen.getByText('Duration').parentElement?.textContent).toContain('--')
+  })
+
+  it('marks the topbar compact through the 420px breakpoint', async () => {
+    setViewport(420)
+    stubHealthyConnection()
+
+    render(App)
+
+    await screen.findByText('Connected')
+    const topbar = document.querySelector('.topbar')
+    expect(topbar?.classList.contains('topbar--compact')).toBe(true)
+
+    setViewport(421)
+
+    await waitFor(() => {
+      expect(topbar?.classList.contains('topbar--compact')).toBe(false)
+    })
+  })
+
   it('opens and closes the tablet run metrics drawer without duplicate inspector content', async () => {
     setViewport(1024)
     stubHealthyConnection()

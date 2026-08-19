@@ -79,6 +79,26 @@ describe('useNovelRun', () => {
     ])
   })
 
+  it('keeps an absent review round unknown', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        result: {
+          completed_chapters: [],
+          characters: [],
+          world_settings: [],
+          plot_outline: []
+        }
+      })
+    }))
+    const controller = useNovelRun()
+
+    await controller.generate('A city above the clouds')
+
+    expect(controller.result.value?.review_round).toBeNull()
+  })
+
   it('marks the service disconnected when its health endpoint fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,

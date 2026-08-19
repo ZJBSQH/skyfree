@@ -54,7 +54,7 @@ export interface NovelResult {
   characters: CharacterCard[]
   world_settings: unknown[]
   plot_outline: unknown[]
-  review_round: number
+  review_round: number | null
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -114,7 +114,7 @@ export function normalizeNovelResult(value: unknown): NovelResult | null {
     characters,
     world_settings: Array.isArray(value.world_settings) ? value.world_settings : [],
     plot_outline: Array.isArray(value.plot_outline) ? value.plot_outline : [],
-    review_round: typeof value.review_round === 'number' ? value.review_round : 0
+    review_round: typeof value.review_round === 'number' ? value.review_round : null
   }
 }
 

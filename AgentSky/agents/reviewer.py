@@ -74,10 +74,19 @@ class ReviewerAgent(BaseAgent):
         self._log(f"第{review_round + 1}轮审核, 正文字数={len(draft)}")
 
         result = self._call_llm_json(prompt)
+        self._validate_result(result, {
+            "passed": bool,
+            "issues": list,
+            "summary": str,
+        }, "reviewer")
 
         passed = result.get("passed", False)
         issues = result.get("issues", [])
         summary = result.get("summary", "")
+        if any(not isinstance(issue, dict) for issue in issues):
+            raise ValueError("reviewer field issues must contain objects")
+        if not passed and not issues:
+            raise ValueError("reviewer failed result must include at least one issue")
 
         status = "PASS" if passed else f"FAIL ({len(issues)}个问题)"
         print(f"  [ReviewerAgent] {status} | {summary}")

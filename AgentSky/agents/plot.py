@@ -63,9 +63,19 @@ class PlotAgent(BaseAgent):
         self._log(f"大纲现有{len(existing_plot)}节点，准备生成剧情...")
 
         result = self._call_llm_json(prompt)
+        self._validate_result(result, {
+            "plot_nodes": list,
+            "foreshadowing_plan": list,
+            "structure_analysis": str,
+            "summary": str,
+        }, "plot")
 
         new_plot = result.get("plot_nodes", [])
         new_fs = result.get("foreshadowing_plan", [])
+        if any(not isinstance(node, dict) for node in new_plot):
+            raise ValueError("plot field plot_nodes must contain objects")
+        if any(not isinstance(item, dict) for item in new_fs):
+            raise ValueError("plot field foreshadowing_plan must contain objects")
         analysis = result.get("structure_analysis", "")
         summary = result.get("summary", "")
         print(f"  [PlotAgent] +{len(new_plot)}章大纲, +{len(new_fs)}个伏笔 | {summary}")

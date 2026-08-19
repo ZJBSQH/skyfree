@@ -59,10 +59,14 @@ class SupervisorAgent(BaseAgent):
         has_draft = bool(state.get("current_draft", ""))
         review_issues = state.get("review_issues", [])
 
-        # ── 状态一致性修复：reviewer 未通过但无任何 issue → 视为通过 ──
+        if review_passed and has_draft:
+            return self._commit_reviewed_chapter(state)
+
+        if state.get("phase") == "review_repair_done" and has_draft and review_issues:
+            return self._route_repaired_draft_to_writer(review_issues)
+
         if not review_passed and has_draft and not review_issues:
-            print("  [Supervisor] WARNING: review_passed=False 但无 issue，自动修正为通过")
-            review_passed = True
+            raise ValueError("Invalid review state: review failed without issues")
 
         # ── Priority 1: 审核未通过且有正文 → 进入审核修复循环 ──
         if not review_passed and has_draft and review_issues:
@@ -81,34 +85,35 @@ class SupervisorAgent(BaseAgent):
         # ── Priority 3: 蓝图未齐备 → LLM 路由决策 ──
         return self._route_by_llm(state)
 
-    def _route_blueprint_ready(self, state: AgentSkyState) -> dict:
-        """蓝图齐备时的规则路由：直接决定写新章还是结束"""
-        completed_count = len(state.get("completed_chapters", []))
-        plot_count = len(state.get("plot_outline", []))
-        review_passed = state.get("review_passed", False)
-        has_draft = bool(state.get("current_draft", ""))
+    def _route_repaired_draft_to_writer(self, issues: list[dict]) -> dict:
+        instructions = []
+        for issue in issues:
+            description = issue.get("description", "")
+            suggestion = issue.get("suggestion", "")
+            instructions.append(f"- {description}\n  建议: {suggestion}")
 
-        # 全部章节已写完
-        if completed_count >= plot_count and has_draft and review_passed:
-            self._log(f"全部完成: {completed_count}/{plot_count}章, review_passed={review_passed}")
-            return {
-                "phase": "done",
-                "next_action": "finish",
-                "task_context": "",
-                "supervisor_log": [f"[Supervisor] 全部{completed_count}章完成，结束"],
-            }
-
-        # 写下一章（或第一版草稿）
-        chapter_num = completed_count + 1
-        task_context = f"撰写第{chapter_num}章" if not has_draft else f"继续撰写(已完成{completed_count}章)"
-
-        self._log(f"蓝图齐备 → 路由到 writer (第{chapter_num}章)")
         return {
-            "phase": "writing",
+            "phase": "review",
             "next_action": "writer",
-            "task_context": task_context,
-            "supervisor_log": [f"[Supervisor] 蓝图齐备，路由到 writer (第{chapter_num}/{plot_count}章)"],
+            "task_context": "专业设定已修复，请据此重写正文:\n" + "\n".join(instructions),
+            "supervisor_log": ["[Supervisor] 专业设定修复完成，路由到 writer 重写正文"],
         }
+
+    def _commit_reviewed_chapter(self, state: AgentSkyState) -> dict:
+        completed = list(state.get("completed_chapters", []))
+        completed.append(state["current_draft"])
+        committed_state = dict(state)
+        committed_state["completed_chapters"] = completed
+
+        route = self._route_blueprint_ready(committed_state)
+        route.update({
+            "completed_chapters": completed,
+            "current_draft": "",
+            "review_issues": [],
+            "review_passed": False,
+            "review_round": 0,
+        })
+        return route
 
     def _route_by_llm(self, state: AgentSkyState) -> dict:
         """蓝图阶段：通过 LLM 决定下一步路由"""
@@ -122,9 +127,17 @@ class SupervisorAgent(BaseAgent):
         self._log(f"phase={phase}, has_setting={has_settings}, has_char={has_characters}, has_plot={has_plot}")
 
         result = self._call_llm_json(context)
+        self._validate_result(result, {
+            "analysis": str,
+            "next_action": str,
+            "task_context": str,
+            "reason": str,
+        }, "supervisor")
         next_action = result.get("next_action", "finish")
         task_context = result.get("task_context", user_request)
         analysis = result.get("analysis", "")
+        if next_action not in {"setting", "character", "plot", "writer", "finish"}:
+            raise ValueError(f"supervisor field next_action has invalid value: {next_action}")
 
         new_phase = phase
         if next_action == "writer":
@@ -165,6 +178,8 @@ class SupervisorAgent(BaseAgent):
         # critical 或 major → 路由到对应 agent 修复
         if actionable:
             next_action = actionable[0].get("target_agent", "writer")
+            if next_action not in {"setting", "character", "plot", "writer"}:
+                next_action = "writer"
             sev = actionable[0].get("severity", "?")
             desc = actionable[0].get("description", "")
             suggestion = actionable[0].get("suggestion", "")
@@ -192,6 +207,30 @@ class SupervisorAgent(BaseAgent):
             "phase": "done", "next_action": "finish",
             "task_context": "",
             "supervisor_log": ["[Supervisor] 审核无问题，结束"],
+        }
+
+
+    def _route_blueprint_ready(self, state: AgentSkyState) -> dict:
+        completed_count = len(state.get("completed_chapters", []))
+        plot_count = len(state.get("plot_outline", []))
+        max_chapters = 3
+
+        # 全部写完，或已达本轮 3 章上限 → 结束
+        if completed_count >= plot_count or completed_count >= max_chapters:
+            reason = "全部完成" if completed_count >= plot_count else f"已达本轮{max_chapters}章上限"
+            return {"phase": "done", "next_action": "finish", "task_context": "",
+                    "supervisor_log": [f"[Supervisor] {reason}，结束"]}
+
+        return {
+            "phase": "writing",
+            "next_action": "writer",
+            "task_context": f"撰写第{completed_count + 1}章",
+            # ── 跨章状态重置，否则上一章的审核意见会串到新章 ──
+            "review_issues": [],
+            "review_passed": False,
+            "current_draft": "",
+            "review_round": 0,
+            "supervisor_log": [f"[Supervisor] 蓝图齐备，路由到 writer (第{completed_count + 1}/{plot_count}章)"],
         }
 
     def _build_context(self, state: AgentSkyState) -> str:
