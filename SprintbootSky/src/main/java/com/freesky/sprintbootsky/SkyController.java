@@ -52,7 +52,15 @@ public class SkyController {
     @PostMapping("/novels")
     public ResponseEntity<Map<String, Object>> createNovel(@Valid @RequestBody CreateNovelRequest request) {
         try {
-            return ResponseEntity.ok(agentSkyClient.create(request.idea()));
+            Map<String, Object> response = agentSkyClient.create(request.idea());
+            if (Boolean.FALSE.equals(response.get("success"))) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+                        "success", false,
+                        "logs", java.util.List.of(),
+                        "result", Map.of(),
+                        "error", "We could not complete your novel. Please try again."));
+            }
+            return ResponseEntity.ok(response);
         } catch (RestClientException | IllegalStateException exception) {
             return agentUnavailable(exception);
         }

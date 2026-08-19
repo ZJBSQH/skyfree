@@ -168,11 +168,11 @@ class SupervisorAgent(BaseAgent):
 
         # 强制结束：已达最大轮次
         if review_round >= max_rounds:
-            print(f"  [Supervisor] review_round={review_round} >= max={max_rounds}, 强制结束")
+            print(f"  [Supervisor] review_round={review_round} >= max={max_rounds}, 审核失败")
             return {
-                "phase": "done", "next_action": "finish",
+                "phase": "failed", "next_action": "finish",
                 "task_context": "",
-                "supervisor_log": ["[Supervisor] 已达最大审核轮次，强制结束"],
+                "supervisor_log": ["[Supervisor] 已达最大审核轮次，正文未获批准"],
             }
 
         # critical 或 major → 路由到对应 agent 修复

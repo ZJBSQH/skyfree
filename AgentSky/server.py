@@ -1,6 +1,5 @@
 """AgentSky FastAPI 服务 — HTTP API 包装多Agent写作工作流"""
 
-import sys
 import json
 import io
 import os
@@ -18,10 +17,9 @@ app = FastAPI(title="AgentSky API")
 
 
 def _max_concurrent_requests() -> int:
-    try:
-        return max(1, int(os.getenv("AGENTSKY_MAX_CONCURRENT", "1")))
-    except ValueError:
-        return 1
+    # stdout capture and token accounting are process-global, so generation
+    # must remain serialized until both are request-local.
+    return 1
 
 
 _CREATE_SLOTS = threading.BoundedSemaphore(_max_concurrent_requests())
@@ -137,6 +135,16 @@ def _create_novel(req: CreateRequest):
             "review_issues": review_issues,
         }
 
+        if result.get("phase") == "failed" or not completed_chapters:
+            log("[ERROR] No chapter passed review")
+            return CreateResponse(
+                success=False,
+                logs=logs,
+                result={},
+                error="No chapter passed review",
+                token_usage=tracker.to_dict(),
+            )
+
         return CreateResponse(success=True, logs=logs, result=serializable, token_usage=tracker.to_dict())
 
     except Exception as e:
@@ -169,8 +177,11 @@ def _serialize_plot(plot: list) -> list:
 
 @app.get("/api/health")
 def health_check():
-    """不触发外部模型调用的进程存活检查。"""
-    return {"status": "ok", "service": "agentsky"}
+    """不触发外部模型调用的本地就绪检查。"""
+    configured = bool(os.getenv("AGENTSKY_API_TOKEN", "").strip()) and bool(
+        os.getenv("DEEPSEEK_API_KEY", "").strip()
+    )
+    return {"status": "ok" if configured else "unavailable", "service": "agentsky"}
 
 
 if __name__ == "__main__":

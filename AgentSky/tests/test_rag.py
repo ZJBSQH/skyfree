@@ -26,15 +26,14 @@ def test_search_returns_relevant_docs(store):
     assert "score" in results[0]
 
 
-def test_ingest_from_folder(tmp_path):
+def test_ingest_from_folder(tmp_path, monkeypatch):
+    monkeypatch.setenv("RAG_ENABLED", "false")
     (tmp_path / "a.txt").write_text("关于炼丹术的参考素材。", encoding="utf-8")
     (tmp_path / "b.txt").write_text("关于宗门等级制度的参考素材。", encoding="utf-8")
     s = RagStore()
-    if s.embedder is None:
-        pytest.skip("嵌入模型加载失败")
-    n = s.ingest_from_folder(str(tmp_path))
-    assert n == 2
-    assert len(s.search("炼丹 等级", top_k=3)) >= 1
+    file_count, chunk_count = s.ingest_from_folder(str(tmp_path))
+    assert file_count == 2
+    assert chunk_count == 2
 
 
 def test_empty_store_search_returns_empty():

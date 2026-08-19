@@ -1,250 +1,275 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { PanelLeftClose, PanelLeftOpen, PanelRightOpen } from 'lucide-vue-next'
+import AgentWorkspace from './components/AgentWorkspace.vue'
+import ChapterReader from './components/ChapterReader.vue'
+import CharacterProfile from './components/CharacterProfile.vue'
+import ProjectNavigator, { type ContentSelection } from './components/ProjectNavigator.vue'
+import RunInspector from './components/RunInspector.vue'
+import { useNovelRun } from './composables/useNovelRun'
 
-interface CreateResponse {
-  success: boolean
-  error?: string
-  result?: { completed_chapters?: string[] }
-  token_usage?: { total_tokens?: number }
-}
+const lastGeneratedIdea = ref('')
+const selectedContent = ref<ContentSelection>({ type: 'agent' })
+const viewportWidth = ref(typeof window === 'undefined' ? 1180 : window.innerWidth)
+const openDrawer = ref<'project' | 'metrics' | null>(null)
+const drawerTrigger = ref<HTMLElement | null>(null)
+const drawerDialog = ref<HTMLElement | null>(null)
+const {
+  connected,
+  checked,
+  status,
+  events,
+  result,
+  tokenUsage,
+  error,
+  elapsedSeconds,
+  checkConnection,
+  generate
+} = useNovelRun()
 
-const idea = ref('')
-const connected = ref(false)
-const checked = ref(false)
-const generating = ref(false)
-const errorMessage = ref('')
-const chapters = ref<string[]>([])
-const totalTokens = ref<number | null>(null)
-
-const canGenerate = computed(() =>
-  connected.value && idea.value.trim().length > 0 && !generating.value
+const errorMessage = computed(() =>
+  error.value || (checked.value && !connected.value ? 'AgentSky is unavailable' : '')
+)
+const selectedChapter = computed(() =>
+  selectedContent.value.type === 'chapter'
+    ? result.value?.completed_chapters[selectedContent.value.index]
+    : undefined
+)
+const selectedCharacter = computed(() =>
+  selectedContent.value.type === 'character'
+    ? result.value?.characters[selectedContent.value.index]
+    : undefined
+)
+const isDesktop = computed(() => viewportWidth.value >= 1180)
+const isMobile = computed(() => viewportWidth.value < 760)
+const isCompactTopbar = computed(() => viewportWidth.value <= 420)
+const inspectorElapsedSeconds = computed(() =>
+  status.value === 'idle' ? null : elapsedSeconds.value
 )
 
-async function checkConnection() {
-  try {
-    const response = await fetch('/api/agent/health')
-    if (!response.ok) throw new Error('HTTP ' + response.status)
-    const health = await response.json()
-    connected.value = health.status === 'ok'
-    if (!connected.value) throw new Error('AgentSky unhealthy')
-  } catch {
-    connected.value = false
-    errorMessage.value = 'AgentSky is unavailable'
-  } finally {
-    checked.value = true
+watch(result, () => {
+  if (selectedContent.value.type === 'chapter' && selectedChapter.value === undefined) {
+    selectedContent.value = { type: 'agent' }
+  }
+
+  if (selectedContent.value.type === 'character' && !selectedCharacter.value) {
+    selectedContent.value = { type: 'agent' }
+  }
+})
+
+function generateNovel(idea: string) {
+  lastGeneratedIdea.value = idea
+  return generate(idea)
+}
+
+function retryNovel() {
+  if (lastGeneratedIdea.value) return generate(lastGeneratedIdea.value)
+}
+
+function updateViewport() {
+  viewportWidth.value = window.innerWidth
+  if ((openDrawer.value === 'project' && !isMobile.value) || (openDrawer.value === 'metrics' && isDesktop.value)) {
+    closeResponsiveDrawer(false)
   }
 }
 
-async function generateNovel() {
-  if (!canGenerate.value) return
-  generating.value = true
-  errorMessage.value = ''
-  chapters.value = []
-  totalTokens.value = null
+function openResponsiveDrawer(drawer: 'project' | 'metrics', event: MouseEvent) {
+  drawerTrigger.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  openDrawer.value = drawer
+  nextTick(focusFirstDrawerControl)
+}
 
-  try {
-    const response = await fetch('/api/novels', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idea: idea.value.trim() })
-    })
-    const payload: CreateResponse = await response.json()
-    if (!response.ok || !payload.success) {
-      throw new Error(payload.error || 'HTTP ' + response.status)
-    }
-    chapters.value = payload.result?.completed_chapters ?? []
-    totalTokens.value = payload.token_usage?.total_tokens ?? null
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Generation failed'
-  } finally {
-    generating.value = false
+function focusableDrawerElements() {
+  if (!drawerDialog.value) return []
+
+  return Array.from(drawerDialog.value.querySelectorAll<HTMLElement>(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter((element) => element.tabIndex >= 0)
+}
+
+function focusFirstDrawerControl() {
+  focusableDrawerElements()[0]?.focus()
+}
+
+function closeResponsiveDrawer(restoreFocus = true) {
+  const trigger = drawerTrigger.value
+  openDrawer.value = null
+  if (!restoreFocus) return
+
+  nextTick(() => {
+    if (!trigger?.isConnected) return
+
+    const style = window.getComputedStyle(trigger)
+    if (style.display !== 'none' && style.visibility !== 'hidden') trigger.focus()
+  })
+}
+
+function selectContent(selection: ContentSelection) {
+  selectedContent.value = selection
+  if (openDrawer.value === 'project') closeResponsiveDrawer()
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && openDrawer.value) closeResponsiveDrawer()
+  if (event.key !== 'Tab' || !openDrawer.value) return
+
+  const focusableElements = focusableDrawerElements()
+  if (!focusableElements.length) return
+
+  const first = focusableElements[0]!
+  const last = focusableElements[focusableElements.length - 1]!
+  const activeElement = document.activeElement
+
+  if (event.shiftKey && (activeElement === first || !drawerDialog.value?.contains(activeElement))) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && (activeElement === last || !drawerDialog.value?.contains(activeElement))) {
+    event.preventDefault()
+    first.focus()
   }
 }
 
-onMounted(checkConnection)
+onMounted(() => {
+  checkConnection()
+  window.addEventListener('resize', updateViewport)
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateViewport)
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
-  <main class="app-shell">
-    <header class="topbar">
-      <div>
-        <p class="product">Freesky</p>
-        <h1>Novel workspace</h1>
-      </div>
-      <div class="connection">
-        <span class="status-dot" :class="{ connected, failed: checked && !connected }" aria-hidden="true" />
-        <div>
-          <strong>{{ connected ? 'Connected' : checked ? 'Unavailable' : 'Connecting' }}</strong>
-          <span>VueSky -&gt; SprintbootSky -&gt; AgentSky</span>
-        </div>
-      </div>
-    </header>
+  <div class="studio-shell">
+    <ProjectNavigator v-if="!isMobile" :result="result" :selection="selectedContent" @select="selectContent" />
 
-    <section class="workspace" aria-labelledby="idea-title">
-      <div class="section-heading">
+    <main class="studio-canvas" :data-content-selection="selectedContent.type">
+      <header class="topbar" :class="{ 'topbar--compact': isCompactTopbar }">
         <div>
-          <p class="eyebrow">New project</p>
-          <h2 id="idea-title">Story idea</h2>
+          <p class="product">Freesky</p>
+          <h1>Novel workspace</h1>
         </div>
-        <span class="counter">{{ idea.length }} / 2000</span>
-      </div>
-
-      <form class="idea-form" @submit.prevent="generateNovel">
-        <label class="sr-only" for="story-idea">Story idea</label>
-        <textarea
-          id="story-idea"
-          v-model="idea"
-          maxlength="2000"
-          placeholder="A courier discovers that every undelivered letter changes the city..."
-        />
-        <div class="form-actions">
-          <span class="state-copy">{{ generating ? 'Agents are writing and reviewing...' : '' }}</span>
-          <button type="submit" :disabled="!canGenerate">
-            {{ generating ? 'Generating' : 'Generate' }}
+        <div class="topbar__actions">
+          <button
+            v-if="isMobile"
+            class="icon-button"
+            type="button"
+            aria-label="Open project directory"
+            title="Open project directory"
+            aria-controls="responsive-drawer"
+            :aria-expanded="openDrawer === 'project'"
+            @click="openResponsiveDrawer('project', $event)"
+          >
+            <PanelLeftOpen :size="19" aria-hidden="true" />
           </button>
+          <button
+            v-if="!isDesktop"
+            class="icon-button"
+            type="button"
+            aria-label="Open run metrics"
+            title="Open run metrics"
+            aria-controls="responsive-drawer"
+            :aria-expanded="openDrawer === 'metrics'"
+            @click="openResponsiveDrawer('metrics', $event)"
+          >
+            <PanelRightOpen :size="19" aria-hidden="true" />
+          </button>
+          <div class="connection">
+            <span class="status-dot" :class="{ connected, failed: checked && !connected }" aria-hidden="true" />
+            <div>
+              <strong>{{ connected ? 'Connected' : checked ? 'Unavailable' : 'Connecting' }}</strong>
+              <span>VueSky -&gt; SprintbootSky -&gt; AgentSky</span>
+            </div>
+          </div>
         </div>
-      </form>
+      </header>
 
-      <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
-    </section>
+      <template v-if="selectedContent.type === 'agent'">
+        <AgentWorkspace
+          :status="status"
+          :events="events"
+          :error-message="errorMessage"
+          :connected="connected"
+          :elapsed-seconds="elapsedSeconds"
+          @generate="generateNovel"
+          @retry="retryNovel"
+        />
 
-    <section v-if="chapters.length" class="results" aria-labelledby="results-title">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Reviewed output</p>
-          <h2 id="results-title">Completed chapters</h2>
-        </div>
-        <span v-if="totalTokens !== null" class="counter">{{ totalTokens }} tokens</span>
-      </div>
-      <article v-for="(chapter, index) in chapters" :key="index" class="chapter">
-        <h3>Chapter {{ index + 1 }}</h3>
-        <p>{{ chapter }}</p>
-      </article>
-    </section>
-  </main>
+        <section v-if="result?.completed_chapters.length" class="results" aria-labelledby="results-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Reviewed output</p>
+              <h2 id="results-title">Completed chapters</h2>
+            </div>
+            <span v-if="tokenUsage" class="counter">{{ tokenUsage.total_tokens }} tokens</span>
+          </div>
+          <article v-for="(chapter, index) in result?.completed_chapters ?? []" :key="index" class="chapter">
+            <h3>Chapter {{ index + 1 }}</h3>
+            <p>{{ chapter }}</p>
+          </article>
+        </section>
+      </template>
+      <ChapterReader
+        v-else-if="selectedChapter !== undefined"
+        :content="selectedChapter"
+        :chapter-number="selectedContent.index + 1"
+      />
+      <CharacterProfile
+        v-else-if="selectedCharacter"
+        :character="selectedCharacter"
+      />
+    </main>
+
+    <aside v-if="isDesktop" class="studio-inspector" aria-label="Run metrics">
+      <RunInspector
+        :connected="connected"
+        :status="status"
+        :token-usage="tokenUsage"
+        :elapsed-seconds="inspectorElapsedSeconds"
+        :review-round="result?.review_round ?? null"
+        :completed-chapter-count="result?.completed_chapters.length ?? null"
+      />
+    </aside>
+  </div>
+
+  <div v-if="openDrawer" class="drawer-layer">
+    <button
+      class="drawer-backdrop"
+      type="button"
+      :aria-label="openDrawer === 'project' ? 'Close project directory backdrop' : 'Close run metrics backdrop'"
+      @click="closeResponsiveDrawer()"
+    />
+    <aside
+      class="side-drawer"
+      :class="`side-drawer--${openDrawer}`"
+      id="responsive-drawer"
+      ref="drawerDialog"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="openDrawer === 'project' ? 'Project directory' : 'Run metrics'"
+    >
+      <template v-if="openDrawer === 'project'">
+        <header class="side-drawer__header">
+          <h2>Project directory</h2>
+          <button class="icon-button" type="button" aria-label="Close project directory" title="Close project directory" @click="closeResponsiveDrawer()">
+            <PanelLeftClose :size="18" aria-hidden="true" />
+          </button>
+        </header>
+        <ProjectNavigator :result="result" :selection="selectedContent" @select="selectContent" />
+      </template>
+      <RunInspector
+        v-else
+        :connected="connected"
+        :status="status"
+        :token-usage="tokenUsage"
+        :elapsed-seconds="inspectorElapsedSeconds"
+        :review-round="result?.review_round ?? null"
+        :completed-chapter-count="result?.completed_chapters.length ?? null"
+        dismissible
+        @close="closeResponsiveDrawer"
+      />
+    </aside>
+  </div>
 </template>
-
-<style>
-:root {
-  color: #18201d;
-  background: #eef1ee;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-synthesis: none;
-}
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
-button, textarea { font: inherit; }
-button:focus-visible, textarea:focus-visible {
-  outline: 3px solid rgba(35, 104, 73, 0.2);
-  outline-offset: 2px;
-}
-.app-shell {
-  width: min(920px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 32px 0 64px;
-}
-.topbar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 32px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #cbd2ce;
-}
-.product, .eyebrow {
-  margin: 0 0 6px;
-  color: #567066;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-h1, h2, h3, p { margin-top: 0; }
-h1 { margin-bottom: 0; font-size: 30px; line-height: 1.15; }
-h2 { margin-bottom: 0; font-size: 20px; }
-.connection { display: flex; align-items: center; gap: 10px; }
-.connection div { display: grid; gap: 3px; }
-.connection strong { font-size: 13px; }
-.connection span:last-child { color: #68706b; font-size: 12px; }
-.status-dot {
-  width: 10px;
-  height: 10px;
-  flex: 0 0 10px;
-  border-radius: 50%;
-  background: #98a09b;
-}
-.status-dot.connected { background: #278457; }
-.status-dot.failed { background: #b4473d; }
-.workspace, .results { padding: 34px 0; border-bottom: 1px solid #d5dad7; }
-.section-heading, .form-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-.counter, .state-copy { color: #68706b; font-size: 12px; }
-.idea-form { margin-top: 20px; }
-textarea {
-  width: 100%;
-  min-height: 176px;
-  resize: vertical;
-  padding: 16px;
-  border: 1px solid #aeb7b1;
-  border-radius: 6px;
-  color: #18201d;
-  background: #fff;
-  line-height: 1.6;
-}
-textarea::placeholder { color: #89918c; }
-.form-actions { min-height: 42px; margin-top: 12px; }
-button {
-  min-width: 112px;
-  min-height: 40px;
-  padding: 8px 18px;
-  border: 1px solid #1e6645;
-  border-radius: 6px;
-  color: #fff;
-  background: #236849;
-  font-weight: 700;
-  cursor: pointer;
-}
-button:hover:not(:disabled) { background: #194f37; }
-button:disabled {
-  border-color: #b8bfbb;
-  color: #737b76;
-  background: #dfe3e0;
-  cursor: not-allowed;
-}
-.error {
-  margin: 18px 0 0;
-  padding: 12px 0;
-  border-top: 1px solid #dfbbb7;
-  color: #963a31;
-}
-.chapter { padding: 24px 0; border-bottom: 1px solid #d9ddda; }
-.chapter:last-child { border-bottom: 0; }
-.chapter h3 { margin-bottom: 10px; font-size: 15px; }
-.chapter p {
-  margin-bottom: 0;
-  color: #323a36;
-  line-height: 1.75;
-  white-space: pre-wrap;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-@media (max-width: 640px) {
-  .app-shell { width: min(100% - 24px, 920px); padding-top: 24px; }
-  .topbar { align-items: flex-start; flex-direction: column; }
-  .connection { width: 100%; }
-  .section-heading { align-items: flex-start; }
-}
-</style>

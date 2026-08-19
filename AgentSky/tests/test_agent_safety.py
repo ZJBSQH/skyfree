@@ -67,3 +67,62 @@ def test_reviewer_rejects_json_without_required_fields():
 
     with pytest.raises(ValueError, match="passed"):
         agent.invoke(state)
+
+
+def test_reviewer_rejects_passed_result_with_issues():
+    state = make_initial_state("test novel")
+    state["current_draft"] = "draft"
+    payload = (
+        '{"passed":true,"summary":"looks fine","issues":['
+        '{"severity":"critical","category":"logic_flaw",'
+        '"description":"broken cause","target_agent":"writer",'
+        '"suggestion":"repair it"}]}'
+    )
+    agent = ReviewerAgent(FakeModel(payload), REVIEWER_PROMPT)
+
+    with pytest.raises(ValueError, match="passed result must not include issues"):
+        agent.invoke(state)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("severity", "blocker"), ("category", "continuity"), ("target_agent", "reviewer")],
+)
+def test_reviewer_rejects_invalid_issue_enums(field, value):
+    state = make_initial_state("test novel")
+    state["current_draft"] = "draft"
+    issue = {
+        "severity": "major",
+        "category": "logic_flaw",
+        "description": "broken cause",
+        "target_agent": "writer",
+        "suggestion": "repair it",
+    }
+    issue[field] = value
+    payload = '{"passed":false,"summary":"needs work","issues":[' + __import__("json").dumps(issue) + "]}"
+    agent = ReviewerAgent(FakeModel(payload), REVIEWER_PROMPT)
+
+    with pytest.raises(ValueError, match=field):
+        agent.invoke(state)
+
+
+def test_supervisor_marks_review_exhaustion_as_failed():
+    state = _ready_state()
+    state.update({
+        "phase": "review",
+        "current_draft": "unapproved draft",
+        "review_passed": False,
+        "review_round": state["max_review_rounds"],
+        "review_issues": [{
+            "severity": "critical",
+            "category": "logic_flaw",
+            "description": "broken cause",
+            "target_agent": "writer",
+            "suggestion": "repair it",
+        }],
+    })
+
+    result = SupervisorAgent(FakeModel("{}"), SUPERVISOR_PROMPT).invoke(state)
+
+    assert result["phase"] == "failed"
+    assert result["next_action"] == "finish"

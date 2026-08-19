@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.is;
@@ -53,13 +54,37 @@ class SkyControllerTest {
     }
 
     @Test
-    void createNovelProxiesIdeaToAgentSky() throws Exception {
-        when(agentSkyClient.create(any())).thenReturn(Map.of("success", true));
+    void createNovelProxiesCompletedChapterAndTokenUsage() throws Exception {
+        when(agentSkyClient.create(any())).thenReturn(Map.of(
+                "success", true,
+                "logs", List.of("[WriterAgent] Drafted Chapter 1"),
+                "result", Map.of("completed_chapters", List.of("Reviewed chapter")),
+                "token_usage", Map.of("total_tokens", 120)));
 
         mockMvc.perform(post("/api/novels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"idea\":\"A city above the clouds\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success", is(true)));
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.result.completed_chapters[0]", is("Reviewed chapter")))
+                .andExpect(jsonPath("$.token_usage.total_tokens", is(120)));
+    }
+
+    @Test
+    void createNovelSanitizesUnsafeAgentSkyFailure() throws Exception {
+        when(agentSkyClient.create(any())).thenReturn(Map.of(
+                "success", false,
+                "error", "Traceback: provider credential leaked",
+                "logs", List.of("[ERROR] Traceback: provider credential leaked"),
+                "result", Map.of("debug", "unsafe")));
+
+        mockMvc.perform(post("/api/novels")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idea\":\"A city above the clouds\"}"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error", is("We could not complete your novel. Please try again.")))
+                .andExpect(jsonPath("$.logs").isEmpty())
+                .andExpect(jsonPath("$.result").isEmpty());
     }
 }
