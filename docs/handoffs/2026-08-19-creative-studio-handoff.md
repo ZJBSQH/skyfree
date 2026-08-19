@@ -1,12 +1,12 @@
 # Freesky Creative Studio Handoff
 
 Date: 2026-08-19
-Status: Resumed; environment blocker resolved, pending final commit and review
+Status: Implementation and full regression verification complete; pending final re-review and branch integration
 
 ## Resume Update
 
 - The isolated `.venv` now imports FastAPI, LangGraph, and `sentence-transformers 6.0.0`; `pip check` is clean.
-- AgentSky passes `24` tests with `2` optional online-embedding tests skipped under `RAG_ENABLED=false`.
+- AgentSky passes `33` tests with `1` optional online-embedding search test skipped under `RAG_ENABLED=false`.
 - SprintbootSky passes `8/8` tests on Java 21 and Spring Boot 4.0.7.
 - VueSky passes `35/35` tests and its production build.
 - The 375x844 browser regression has no horizontal overflow, overlap, or console issue.
@@ -28,7 +28,7 @@ The current API remains synchronous. The UI must never fake per-Agent live progr
 - Main workspace: `F:\Workspace\Agent\Freesky`
 - Isolated worktree: `F:\Workspace\Agent\Freesky\.worktrees\creative-studio-ui`
 - Branch: `codex/creative-studio-ui`
-- Current HEAD: `02f070b feat: complete creative studio integration`
+- Current HEAD: run `git log -1 --oneline` for the latest reviewed fix commit.
 - Do all continuation work in the isolated worktree. Do not revert or overwrite the dirty main workspace.
 
 ## Completed And Committed
@@ -96,9 +96,19 @@ VueSky:
 
 ## Resolved Blocker
 
-AgentSky pytest initially used the wrong Python and then waited on an online embedding-model download. The ignored root `.venv` is now healthy. Running with the project's `RAG_ENABLED=false` configuration produces `24 passed, 2 skipped`; only the tests requiring downloaded embedding weights are skipped.
+AgentSky pytest initially used the wrong Python and then waited on an online embedding-model download. The ignored root `.venv` is now healthy. Running with the project's `RAG_ENABLED=false` configuration produces `33 passed, 1 skipped`; only the semantic search test requiring downloaded embedding weights is skipped. The folder-ingestion contract now runs offline.
 
-## Tomorrow: Exact Next Steps
+## Final Review Fixes
+
+- SprintbootSky is bound to `127.0.0.1`, preventing an unauthenticated network caller from reaching the paid local generation route.
+- AgentSky generation is intentionally serialized because stdout capture and Token accounting are process-global.
+- Reviewer output now rejects contradictory `passed=true` results with issues and validates every issue field and enum.
+- Exhausting review rounds produces a failed run; the API never reports success without a reviewed chapter.
+- AgentSky health is now a side-effect-free readiness check for the service token and model key.
+- Maven 3.9.9 is pinned with a SHA-256 checksum verified against the Apache SHA-512 release checksum.
+- The RAG folder-ingestion test now matches the `(file_count, chunk_count)` contract and runs with embeddings disabled.
+
+## Next Steps
 
 1. Enter the isolated worktree:
 
@@ -106,26 +116,13 @@ AgentSky pytest initially used the wrong Python and then waited on an online emb
    Set-Location F:\Workspace\Agent\Freesky\.worktrees\creative-studio-ui
    ```
 
-2. Confirm Python and Agent dependencies:
-
-   ```powershell
-   .\.venv\Scripts\python.exe -c "import fastapi, langgraph; print('core ok')"
-   .\.venv\Scripts\python.exe -c "import sentence_transformers; print('rag ok')"
-   ```
-
-3. If the second import fails, retry the missing dependency after checking no Python process is locking `.venv`:
-
-   ```powershell
-   .\.venv\Scripts\python.exe -m pip install sentence-transformers
-   ```
-
-4. Run the AgentSky suite from `AgentSky`:
+2. Run the AgentSky suite from `AgentSky`:
 
    ```powershell
    ..\.venv\Scripts\python.exe -m pytest -q
    ```
 
-5. Re-run Spring and Vue verification:
+3. Re-run Spring and Vue verification:
 
    ```powershell
    Set-Location ..\SprintbootSky
@@ -136,7 +133,7 @@ AgentSky pytest initially used the wrong Python and then waited on an online emb
    pnpm build
    ```
 
-6. Return to the worktree root and inspect hygiene:
+4. Return to the worktree root and inspect hygiene:
 
    ```powershell
    Set-Location ..
@@ -145,11 +142,7 @@ AgentSky pytest initially used the wrong Python and then waited on an online emb
    git diff --stat
    ```
 
-7. Recheck 375x844 in the browser after starting Vue on a free port. Do not click Generate; health is now side-effect-free, but generation uses real model Tokens.
-
-8. Append final evidence to `.superpowers/sdd/2026-08-18-creative-studio-ui/task-6-report.md`, review staged files carefully, and commit the backend import/final fixes.
-
-9. Run a fresh scoped re-review of the final findings, then a final full-branch review. Only mark Task 6 complete after both approve.
+5. Complete the final independent re-review, then choose merge, PR, or keep the branch.
 
 ## Final Review Findings Being Resolved
 
@@ -166,4 +159,4 @@ AgentSky pytest initially used the wrong Python and then waited on an online emb
 - The Vue dev server was started at `http://127.0.0.1:5174/` during this session. Do not assume it survives overnight; restart it if needed.
 - Earlier main-workspace services used AgentSky `8765`, Spring `8080`, and Vue `5173`. Check ports before starting duplicates.
 - The main workspace is intentionally dirty and contains the source material imported here. Never reset, checkout, or clean it destructively.
-- The isolated worktree currently has intentional uncommitted changes. Do not remove the worktree.
+- Do not remove the isolated worktree until the branch has been integrated or intentionally retained.

@@ -85,8 +85,11 @@ class ReviewerAgent(BaseAgent):
         summary = result.get("summary", "")
         if any(not isinstance(issue, dict) for issue in issues):
             raise ValueError("reviewer field issues must contain objects")
+        if passed and issues:
+            raise ValueError("reviewer passed result must not include issues")
         if not passed and not issues:
             raise ValueError("reviewer failed result must include at least one issue")
+        self._validate_issues(issues)
 
         status = "PASS" if passed else f"FAIL ({len(issues)}个问题)"
         print(f"  [ReviewerAgent] {status} | {summary}")
@@ -101,6 +104,29 @@ class ReviewerAgent(BaseAgent):
             "review_round": review_round + 1,
             "messages": [f"[ReviewerAgent] {status}: {summary}"],
         }
+
+    @staticmethod
+    def _validate_issues(issues: list[dict]) -> None:
+        required = {
+            "severity": str,
+            "category": str,
+            "description": str,
+            "target_agent": str,
+            "suggestion": str,
+        }
+        allowed = {
+            "severity": {"critical", "major", "minor"},
+            "category": {"setting_conflict", "logic_flaw", "character_ooc", "style", "deviation"},
+            "target_agent": {"setting", "character", "plot", "writer"},
+        }
+        for issue in issues:
+            for field, expected_type in required.items():
+                value = issue.get(field)
+                if not isinstance(value, expected_type) or not value.strip():
+                    raise ValueError(f"reviewer issue field {field} is required")
+            for field, values in allowed.items():
+                if issue[field] not in values:
+                    raise ValueError(f"reviewer issue field {field} has invalid value")
 
     def _build_user_prompt(self, state: AgentSkyState) -> str:
         parts = []
