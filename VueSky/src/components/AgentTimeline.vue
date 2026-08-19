@@ -12,13 +12,13 @@ import {
 import type { AgentName, AgentEvent } from '../types/novel'
 
 const agentPresentation = {
-  supervisor: { label: 'Supervisor', icon: Network, tone: 'violet' },
-  setting: { label: 'Setting', icon: Globe2, tone: 'teal' },
-  character: { label: 'Character', icon: Users, tone: 'rose' },
-  plot: { label: 'Plot', icon: ListTree, tone: 'blue' },
-  writer: { label: 'Writer', icon: PenLine, tone: 'green' },
-  reviewer: { label: 'Reviewer', icon: ScanSearch, tone: 'amber' },
-  system: { label: 'System', icon: CircleDot, tone: 'neutral' }
+  supervisor: { label: '主编', icon: Network, tone: 'violet' },
+  setting: { label: '设定师', icon: Globe2, tone: 'teal' },
+  character: { label: '人物设计师', icon: Users, tone: 'rose' },
+  plot: { label: '剧情策划', icon: ListTree, tone: 'blue' },
+  writer: { label: '写手', icon: PenLine, tone: 'green' },
+  reviewer: { label: '审核员', icon: ScanSearch, tone: 'amber' },
+  system: { label: '系统', icon: CircleDot, tone: 'neutral' }
 } as const
 
 defineProps<{
@@ -32,12 +32,12 @@ function presentationFor(agent: AgentName) {
 </script>
 
 <template>
-  <ol class="agent-timeline" aria-label="Agent activity">
+  <ol class="agent-timeline" aria-label="智能体动态">
     <li v-if="isRunning" class="agent-timeline__item agent-timeline__item--running">
       <LoaderCircle :size="18" class="agent-timeline__spinner" aria-hidden="true" />
       <div>
-        <strong>AgentSky workflow</strong>
-        <span>Waiting for the synchronous workflow to finish</span>
+        <strong>AgentSky 创作流程</strong>
+        <span>正在等待智能体协作完成</span>
       </div>
     </li>
     <li

@@ -74,8 +74,8 @@ describe('useNovelRun', () => {
     await controller.generate('A city above the clouds')
 
     expect(controller.result.value?.characters).toEqual([
-      { name: 'Unnamed character', role_type: 'supporting', relationships: [] },
-      { name: 'Unnamed character', relationships: [{ name: 'Toma', relation: 'Friend' }] }
+      { name: '未命名人物', role_type: 'supporting', relationships: [] },
+      { name: '未命名人物', relationships: [{ name: 'Toma', relation: 'Friend' }] }
     ])
   })
 
@@ -123,7 +123,7 @@ describe('useNovelRun', () => {
     await controller.generate('A city above the clouds')
 
     expect(controller.status.value).toBe('failed')
-    expect(controller.error.value).toBe('AgentSky unavailable')
+    expect(controller.error.value).toBe('创作失败，请稍后重试')
   })
 
   it('ignores a second generate call while the first is running', async () => {

@@ -26,12 +26,12 @@ describe('CharacterProfile', () => {
 
     expect(screen.getByText('Ma')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Mara Venn' })).toBeTruthy()
-    expect(screen.getByText('Protagonist')).toBeTruthy()
+    expect(screen.getByText('主角')).toBeTruthy()
     expect(screen.getByText('Methodical under pressure')).toBeTruthy()
     expect(screen.getByText('Find her missing brother')).toBeTruthy()
     expect(screen.getByText('Maps shifting city routes')).toBeTruthy()
     expect(screen.getByText('Raised among the city archivists')).toBeTruthy()
-    expect(screen.getByText('2 relationships')).toBeTruthy()
+    expect(screen.getByText('2 条关系')).toBeTruthy()
     expect(screen.getByText('Toma')).toBeTruthy()
     expect(screen.getByText('Trusted courier partner')).toBeTruthy()
   })
@@ -46,8 +46,8 @@ describe('CharacterProfile', () => {
       }
     })
 
-    expect(screen.getAllByText('Not provided')).toHaveLength(4)
-    expect(screen.getByText('0 relationships')).toBeTruthy()
+    expect(screen.getAllByText('未提供')).toHaveLength(4)
+    expect(screen.getByText('0 条关系')).toBeTruthy()
   })
 
   it('uses a stable identity when the returned name is missing or not a string', async () => {
@@ -57,14 +57,14 @@ describe('CharacterProfile', () => {
       }
     })
 
-    expect(screen.getByRole('heading', { name: 'Unnamed character' })).toBeTruthy()
-    expect(screen.getByText('Un')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '未命名人物' })).toBeTruthy()
+    expect(screen.getByText('未命')).toBeTruthy()
 
     await rerender({
       character: { name: 42, role_type: 'Supporting character' } as unknown as CharacterCard
     })
 
-    expect(screen.getByRole('heading', { name: 'Unnamed character' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '未命名人物' })).toBeTruthy()
   })
 
   it('filters malformed relationships before counting or rendering them', async () => {
@@ -78,7 +78,7 @@ describe('CharacterProfile', () => {
       }
     })
 
-    expect(screen.getByText('0 relationships')).toBeTruthy()
+    expect(screen.getByText('0 条关系')).toBeTruthy()
 
     await rerender({
       character: {
@@ -88,7 +88,7 @@ describe('CharacterProfile', () => {
       } as unknown as CharacterCard
     })
 
-    expect(screen.getByText('1 relationship')).toBeTruthy()
+    expect(screen.getByText('1 条关系')).toBeTruthy()
     expect(screen.getByText('Toma')).toBeTruthy()
   })
 })

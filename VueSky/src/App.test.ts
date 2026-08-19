@@ -21,6 +21,18 @@ describe('App', () => {
     }))
   }
 
+  it('renders the primary workspace controls in Simplified Chinese', async () => {
+    stubHealthyConnection()
+
+    render(App)
+
+    expect(screen.getByRole('heading', { name: '小说创作台' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: '创作灵感' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '开始创作' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '智能体工作区' })).toBeTruthy()
+    await screen.findByText('已连接')
+  })
+
   it('shows the Vue to Spring to AgentSky connection', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
@@ -31,7 +43,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(screen.getByText('VueSky -> SprintbootSky -> AgentSky')).toBeTruthy()
-      expect(screen.getByText('Connected')).toBeTruthy()
+      expect(screen.getByText('已连接')).toBeTruthy()
     })
     expect(fetch).toHaveBeenCalledWith('/api/agent/health')
   })
@@ -65,13 +77,13 @@ describe('App', () => {
       })
     vi.stubGlobal('fetch', fetchMock)
     render(App)
-    await screen.findByText('Connected')
+    await screen.findByText('已连接')
 
     await fireEvent.update(
-      screen.getByRole('textbox', { name: 'Story idea' }),
+      screen.getByRole('textbox', { name: '创作灵感' }),
       'A city above the clouds'
     )
-    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    await fireEvent.click(screen.getByRole('button', { name: '开始创作' }))
 
     await waitFor(() => {
       expect(screen.getByText('The reviewed first chapter.')).toBeTruthy()
@@ -79,7 +91,7 @@ describe('App', () => {
       expect(screen.getByText('Cinderfall')).toBeTruthy()
       expect(screen.getByText('The lost map')).toBeTruthy()
     })
-    for (const group of ['Outline', 'Chapters', 'Characters', 'World']) {
+    for (const group of ['大纲', '章节', '人物', '世界观']) {
       const heading = screen.getByRole('heading', { name: group })
       expect(heading.parentElement?.textContent).toContain('1')
     }
@@ -131,28 +143,28 @@ describe('App', () => {
     vi.stubGlobal('fetch', fetchMock)
     setViewport(1180)
     render(App)
-    await screen.findAllByText('Connected')
+    await screen.findAllByText('已连接')
 
-    expect(screen.getByRole('textbox', { name: 'Story idea' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: '创作灵感' })).toBeTruthy()
 
-    await fireEvent.update(screen.getByRole('textbox', { name: 'Story idea' }), 'A city above the clouds')
-    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
-    await screen.findByRole('button', { name: 'Chapter 1' })
+    await fireEvent.update(screen.getByRole('textbox', { name: '创作灵感' }), 'A city above the clouds')
+    await fireEvent.click(screen.getByRole('button', { name: '开始创作' }))
+    await screen.findByRole('button', { name: '第 1 章' })
 
-    expect(screen.getByText('Writer')).toBeTruthy()
+    expect(screen.getByText('写手')).toBeTruthy()
     expect(screen.getByText('Drafted the reviewed first chapter')).toBeTruthy()
-    expect(screen.getByText('Reviewer')).toBeTruthy()
+    expect(screen.getByText('审核员')).toBeTruthy()
     expect(screen.getByText('Approved Chapter 1 for publication')).toBeTruthy()
     for (const [label, value] of [
-      ['Total tokens', '12,450'],
-      ['Input tokens', '8,000'],
-      ['Output tokens', '4,450']
+      ['Token 总量', '12,450'],
+      ['输入 Token', '8,000'],
+      ['输出 Token', '4,450']
     ] as const) {
       expect(screen.getByText(label).parentElement?.textContent).toContain(value)
     }
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Chapter 1' }))
-    expect(screen.getByRole('heading', { name: 'Chapter 1' })).toBeTruthy()
+    await fireEvent.click(screen.getByRole('button', { name: '第 1 章' }))
+    expect(screen.getByRole('heading', { name: '第 1 章' })).toBeTruthy()
     expect(screen.getByText((_, element) => element?.textContent === 'First chapter.\n\nSecond paragraph.').textContent).toBe(
       'First chapter.\n\nSecond paragraph.'
     )
@@ -160,7 +172,7 @@ describe('App', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Mara Venn' }))
     expect(screen.getByRole('heading', { name: 'Mara Venn' })).toBeTruthy()
     expect(screen.getByText('Find her missing brother')).toBeTruthy()
-    expect(screen.getByText('1 relationship')).toBeTruthy()
+    expect(screen.getByText('1 条关系')).toBeTruthy()
   })
 
   it('retries a failed generation once with the original trimmed idea', async () => {
@@ -189,16 +201,16 @@ describe('App', () => {
       })
     vi.stubGlobal('fetch', fetchMock)
     render(App)
-    await screen.findByText('Connected')
+    await screen.findByText('已连接')
 
     await fireEvent.update(
-      screen.getByRole('textbox', { name: 'Story idea' }),
+      screen.getByRole('textbox', { name: '创作灵感' }),
       '  A city above the clouds  '
     )
-    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
-    await screen.findByRole('button', { name: 'Retry' })
+    await fireEvent.click(screen.getByRole('button', { name: '开始创作' }))
+    await screen.findByRole('button', { name: '重试' })
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await fireEvent.click(screen.getByRole('button', { name: '重试' }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(3)
@@ -220,7 +232,7 @@ describe('App', () => {
     render(App)
 
     await waitFor(() => {
-      expect(screen.getByRole('alert').textContent).toBe('AgentSky is unavailable')
+      expect(screen.getByRole('alert').textContent).toBe('AgentSky 服务不可用')
     })
   })
 
@@ -230,8 +242,8 @@ describe('App', () => {
 
     render(App)
 
-    await screen.findAllByText('Connected')
-    expect(screen.getByText('Duration').parentElement?.textContent).toContain('--')
+    await screen.findAllByText('已连接')
+    expect(screen.getByText('用时').parentElement?.textContent).toContain('--')
   })
 
   it('marks the topbar compact through the 420px breakpoint', async () => {
@@ -240,7 +252,7 @@ describe('App', () => {
 
     render(App)
 
-    await screen.findByText('Connected')
+    await screen.findByText('已连接')
     const topbar = document.querySelector('.topbar')
     expect(topbar?.classList.contains('topbar--compact')).toBe(true)
 
@@ -257,16 +269,16 @@ describe('App', () => {
 
     render(App)
 
-    const trigger = screen.getByRole('button', { name: 'Open run metrics' })
+    const trigger = screen.getByRole('button', { name: '打开运行数据' })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     await fireEvent.click(trigger)
 
-    expect(screen.getByRole('dialog', { name: 'Run metrics' })).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: '运行数据' })).toBeTruthy()
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getAllByRole('heading', { name: 'Run metrics' })).toHaveLength(1)
-    await fireEvent.click(screen.getByRole('button', { name: 'Close run metrics' }))
+    expect(screen.getAllByRole('heading', { name: '运行数据' })).toHaveLength(1)
+    await fireEvent.click(screen.getByRole('button', { name: '关闭运行数据' }))
 
-    expect(screen.queryByRole('dialog', { name: 'Run metrics' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: '运行数据' })).toBeNull()
     expect(document.activeElement).toBe(trigger)
   })
 
@@ -276,13 +288,13 @@ describe('App', () => {
 
     render(App)
 
-    const trigger = screen.getByRole('button', { name: 'Open project directory' })
+    const trigger = screen.getByRole('button', { name: '打开创作目录' })
     await fireEvent.click(trigger)
 
-    expect(screen.getByRole('dialog', { name: 'Project directory' })).toBeTruthy()
-    await fireEvent.click(screen.getByRole('button', { name: 'Close project directory backdrop' }))
+    expect(screen.getByRole('dialog', { name: '创作目录' })).toBeTruthy()
+    await fireEvent.click(screen.getByRole('button', { name: '关闭创作目录背景层' }))
 
-    expect(screen.queryByRole('dialog', { name: 'Project directory' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: '创作目录' })).toBeNull()
     expect(document.activeElement).toBe(trigger)
   })
 
@@ -292,7 +304,7 @@ describe('App', () => {
 
     render(App)
 
-    for (const label of ['Open project directory', 'Open run metrics']) {
+    for (const label of ['打开创作目录', '打开运行数据']) {
       const trigger = screen.getByRole('button', { name: label })
       await fireEvent.click(trigger)
       await fireEvent.keyDown(window, { key: 'Escape' })
@@ -307,17 +319,17 @@ describe('App', () => {
 
     render(App)
 
-    const trigger = screen.getByRole('button', { name: 'Open project directory' })
-    expect(screen.queryByRole('navigation', { name: 'Project navigation' })).toBeNull()
+    const trigger = screen.getByRole('button', { name: '打开创作目录' })
+    expect(screen.queryByRole('navigation', { name: '创作目录导航' })).toBeNull()
     await fireEvent.click(trigger)
-    expect(screen.getByRole('dialog', { name: 'Project directory' })).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: '创作目录' })).toBeTruthy()
 
     setViewport(760)
 
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Project directory' })).toBeNull()
-      expect(screen.queryByRole('button', { name: 'Open project directory' })).toBeNull()
-      expect(screen.getAllByRole('navigation', { name: 'Project navigation' })).toHaveLength(1)
+      expect(screen.queryByRole('dialog', { name: '创作目录' })).toBeNull()
+      expect(screen.queryByRole('button', { name: '打开创作目录' })).toBeNull()
+      expect(screen.getAllByRole('navigation', { name: '创作目录导航' })).toHaveLength(1)
     })
     expect(document.activeElement).not.toBe(trigger)
   })
@@ -328,10 +340,10 @@ describe('App', () => {
 
     render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Open project directory' }))
+    await fireEvent.click(screen.getByRole('button', { name: '打开创作目录' }))
 
-    const close = screen.getByRole('button', { name: 'Close project directory' })
-    const projectNavigationButton = screen.getByRole('button', { name: 'Agent workspace' })
+    const close = screen.getByRole('button', { name: '关闭创作目录' })
+    const projectNavigationButton = screen.getByRole('button', { name: '智能体工作区' })
     expect(document.activeElement).toBe(close)
 
     await fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
@@ -347,16 +359,16 @@ describe('App', () => {
 
     render(App)
 
-    const trigger = screen.getByRole('button', { name: 'Open run metrics' })
+    const trigger = screen.getByRole('button', { name: '打开运行数据' })
     await fireEvent.click(trigger)
-    expect(screen.getByRole('dialog', { name: 'Run metrics' })).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: '运行数据' })).toBeTruthy()
 
     setViewport(1180)
 
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Run metrics' })).toBeNull()
-      expect(screen.queryByRole('button', { name: 'Open run metrics' })).toBeNull()
-      expect(screen.getAllByRole('heading', { name: 'Run metrics' })).toHaveLength(1)
+      expect(screen.queryByRole('dialog', { name: '运行数据' })).toBeNull()
+      expect(screen.queryByRole('button', { name: '打开运行数据' })).toBeNull()
+      expect(screen.getAllByRole('heading', { name: '运行数据' })).toHaveLength(1)
     })
   })
 })

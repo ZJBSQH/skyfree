@@ -61,7 +61,7 @@ export function useNovelRun(): NovelRunController {
 
       const health: HealthResponse = await response.json()
       connected.value = health.status === 'ok'
-      if (!connected.value) throw new Error('AgentSky unhealthy')
+      if (!connected.value) throw new Error('AgentSky 服务未就绪')
     } catch {
       connected.value = false
     } finally {
@@ -90,7 +90,7 @@ export function useNovelRun(): NovelRunController {
       })
       const payload: GenerateResponse = await response.json()
       if (!response.ok || !payload.success) {
-        throw new Error(payload.error || `HTTP ${response.status}`)
+        throw new Error('创作失败，请稍后重试')
       }
 
       events.value = parseAgentLogs(payload.logs ?? [])
@@ -98,7 +98,7 @@ export function useNovelRun(): NovelRunController {
       tokenUsage.value = payload.token_usage ?? null
       status.value = 'completed'
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : 'Generation failed'
+      error.value = cause instanceof Error ? cause.message : '创作失败，请稍后重试'
       status.value = 'failed'
     } finally {
       if (elapsedTimer) clearInterval(elapsedTimer)

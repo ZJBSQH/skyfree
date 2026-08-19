@@ -8,8 +8,8 @@ defineProps<{
 <template>
   <article class="chapter-reader" :aria-labelledby="`chapter-${chapterNumber}-title`">
     <header class="chapter-reader__header">
-      <p class="eyebrow">Reviewed chapter</p>
-      <h2 :id="`chapter-${chapterNumber}-title`">Chapter {{ chapterNumber }}</h2>
+      <p class="eyebrow">已审核章节</p>
+      <h2 :id="`chapter-${chapterNumber}-title`">第 {{ chapterNumber }} 章</h2>
     </header>
     <div class="chapter-reader__content">{{ content }}</div>
   </article>

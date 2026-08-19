@@ -39,35 +39,35 @@ function submit() {
   <section class="agent-workspace" aria-labelledby="agent-workspace-title">
     <div class="agent-workspace__heading">
       <div>
-        <p class="eyebrow">New project</p>
-        <h2 id="agent-workspace-title">Agent workspace</h2>
+        <p class="eyebrow">新建作品</p>
+        <h2 id="agent-workspace-title">智能体工作区</h2>
       </div>
-      <span v-if="isRunning" class="agent-workspace__elapsed">Elapsed {{ elapsedTime }}</span>
+      <span v-if="isRunning" class="agent-workspace__elapsed">已用时 {{ elapsedTime }}</span>
     </div>
 
-    <p v-if="isRunning" class="agent-workspace__state" aria-live="polite">Agents are working</p>
+    <p v-if="isRunning" class="agent-workspace__state" aria-live="polite">智能体正在协作</p>
 
     <AgentTimeline :events="events" :is-running="isRunning" />
 
     <form class="agent-workspace__form" @submit.prevent="submit">
-      <label for="story-idea">Story idea</label>
+      <label for="story-idea">创作灵感</label>
       <textarea
         id="story-idea"
         v-model="idea"
         maxlength="2000"
         :disabled="isRunning"
-        placeholder="A courier discovers that every undelivered letter changes the city..."
+        placeholder="例如：一名失明少年在湖边遇见鬼魂，为拯救同伴踏上未知旅程……"
       />
       <div class="agent-workspace__commands">
         <span class="agent-workspace__counter">{{ idea.length }} / 2000</span>
         <button v-if="status === 'failed'" type="button" @click="emit('retry')">
           <RotateCcw :size="17" aria-hidden="true" />
-          <span>Retry</span>
+          <span>重试</span>
         </button>
         <button v-else type="submit" :disabled="!canGenerate">
           <LoaderCircle v-if="isRunning" :size="17" class="agent-workspace__spinner" aria-hidden="true" />
           <Play v-else :size="17" aria-hidden="true" />
-          <span>{{ isRunning ? 'Generating' : 'Generate' }}</span>
+          <span>{{ isRunning ? '创作中' : '开始创作' }}</span>
         </button>
       </div>
     </form>

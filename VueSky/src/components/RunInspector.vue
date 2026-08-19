@@ -24,7 +24,7 @@ function knownNumber(value: number | null | undefined): value is number {
 }
 
 function formatNumber(value: number | null | undefined) {
-  return knownNumber(value) ? new Intl.NumberFormat('en-US').format(value) : '--'
+  return knownNumber(value) ? new Intl.NumberFormat('zh-CN').format(value) : '--'
 }
 
 function formatYuan(value: number | null | undefined) {
@@ -40,22 +40,28 @@ function formatElapsed(value: number | null) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
-const statusLabel = computed(() => `${props.status.slice(0, 1).toUpperCase()}${props.status.slice(1)}`)
+const statusLabels: Record<RunStatus, string> = {
+  idle: '待命',
+  running: '运行中',
+  completed: '已完成',
+  failed: '失败'
+}
+const statusLabel = computed(() => statusLabels[props.status])
 </script>
 
 <template>
   <section class="run-inspector" aria-labelledby="run-inspector-title">
     <header class="run-inspector__header">
       <div>
-        <p class="eyebrow">Runtime</p>
-        <h2 id="run-inspector-title">Run metrics</h2>
+        <p class="eyebrow">运行状态</p>
+        <h2 id="run-inspector-title">运行数据</h2>
       </div>
       <button
         v-if="dismissible"
         class="icon-button"
         type="button"
-        aria-label="Close run metrics"
-        title="Close run metrics"
+        aria-label="关闭运行数据"
+        title="关闭运行数据"
         @click="emit('close')"
       >
         <PanelLeftClose :size="18" aria-hidden="true" />
@@ -64,43 +70,43 @@ const statusLabel = computed(() => `${props.status.slice(0, 1).toUpperCase()}${p
 
     <dl class="run-inspector__metrics">
       <div class="run-inspector__row">
-        <dt><Server :size="17" aria-hidden="true" />Service</dt>
-        <dd>{{ connected ? 'Connected' : 'Unavailable' }}</dd>
+        <dt><Server :size="17" aria-hidden="true" />服务</dt>
+        <dd>{{ connected ? '已连接' : '不可用' }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><Activity :size="17" aria-hidden="true" />Run status</dt>
+        <dt><Activity :size="17" aria-hidden="true" />运行状态</dt>
         <dd>{{ statusLabel }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><Coins :size="17" aria-hidden="true" />Total tokens</dt>
+        <dt><Coins :size="17" aria-hidden="true" />Token 总量</dt>
         <dd>{{ formatNumber(tokenUsage?.total_tokens) }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><Coins :size="17" aria-hidden="true" />Input tokens</dt>
+        <dt><Coins :size="17" aria-hidden="true" />输入 Token</dt>
         <dd>{{ formatNumber(tokenUsage?.input_tokens) }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><Coins :size="17" aria-hidden="true" />Output tokens</dt>
+        <dt><Coins :size="17" aria-hidden="true" />输出 Token</dt>
         <dd>{{ formatNumber(tokenUsage?.output_tokens) }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><Coins :size="17" aria-hidden="true" />Estimated cost</dt>
+        <dt><Coins :size="17" aria-hidden="true" />预估费用</dt>
         <dd>{{ formatYuan(tokenUsage?.cost_yuan) }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><Coins :size="17" aria-hidden="true" />API calls</dt>
-        <dd>{{ knownNumber(tokenUsage?.call_count) ? `${tokenUsage?.call_count} calls` : '--' }}</dd>
+        <dt><Coins :size="17" aria-hidden="true" />API 调用</dt>
+        <dd>{{ knownNumber(tokenUsage?.call_count) ? `${tokenUsage?.call_count} 次` : '--' }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><Timer :size="17" aria-hidden="true" />Duration</dt>
+        <dt><Timer :size="17" aria-hidden="true" />用时</dt>
         <dd>{{ formatElapsed(elapsedSeconds) }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><MessagesSquare :size="17" aria-hidden="true" />Review round</dt>
+        <dt><MessagesSquare :size="17" aria-hidden="true" />审核轮次</dt>
         <dd>{{ formatNumber(reviewRound) }}</dd>
       </div>
       <div class="run-inspector__row">
-        <dt><BookCheck :size="17" aria-hidden="true" />Completed chapters</dt>
+        <dt><BookCheck :size="17" aria-hidden="true" />完成章节</dt>
         <dd>{{ formatNumber(completedChapterCount) }}</dd>
       </div>
     </dl>

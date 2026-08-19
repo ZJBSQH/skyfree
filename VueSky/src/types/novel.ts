@@ -86,7 +86,7 @@ export function normalizeCharacterCard(value: unknown): CharacterCard | null {
   if (!isRecord(value)) return null
 
   return {
-    name: stringValue(value.name) ?? 'Unnamed character',
+    name: stringValue(value.name) ?? '未命名人物',
     ...(stringValue(value.role_type) ? { role_type: stringValue(value.role_type) } : {}),
     ...(stringValue(value.appearance) ? { appearance: stringValue(value.appearance) } : {}),
     ...(stringValue(value.personality) ? { personality: stringValue(value.personality) } : {}),

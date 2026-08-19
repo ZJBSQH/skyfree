@@ -7,7 +7,7 @@ describe('ChapterReader', () => {
     const content = 'The first paragraph.\n\nThe second paragraph.'
     render(ChapterReader, { props: { content, chapterNumber: 2 } })
 
-    expect(screen.getByRole('heading', { name: 'Chapter 2' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '第 2 章' })).toBeTruthy()
     expect(screen.getByText((_, element) => element?.textContent === content).textContent).toBe(content)
   })
 })

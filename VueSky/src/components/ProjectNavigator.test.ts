@@ -15,7 +15,7 @@ describe('ProjectNavigator', () => {
   it('shows project groups, item counts, and selects a character', async () => {
     const { emitted } = render(ProjectNavigator, { props: { result } })
 
-    for (const group of ['Agent workspace', 'Outline', 'Chapters', 'Characters', 'World', 'Foreshadowing']) {
+    for (const group of ['智能体工作区', '大纲', '章节', '人物', '世界观', '伏笔']) {
       expect(screen.getByRole('heading', { name: group })).toBeTruthy()
     }
     expect(screen.getByText('2')).toBeTruthy()
@@ -36,6 +36,6 @@ describe('ProjectNavigator', () => {
       }
     })
 
-    expect(screen.getByRole('button', { name: 'Unnamed character' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '未命名人物' })).toBeTruthy()
   })
 })

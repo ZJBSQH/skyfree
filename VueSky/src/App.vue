@@ -28,7 +28,7 @@ const {
 } = useNovelRun()
 
 const errorMessage = computed(() =>
-  error.value || (checked.value && !connected.value ? 'AgentSky is unavailable' : '')
+  error.value || (checked.value && !connected.value ? 'AgentSky 服务不可用' : '')
 )
 const selectedChapter = computed(() =>
   selectedContent.value.type === 'chapter'
@@ -149,15 +149,15 @@ onBeforeUnmount(() => {
       <header class="topbar" :class="{ 'topbar--compact': isCompactTopbar }">
         <div>
           <p class="product">Freesky</p>
-          <h1>Novel workspace</h1>
+          <h1>小说创作台</h1>
         </div>
         <div class="topbar__actions">
           <button
             v-if="isMobile"
             class="icon-button"
             type="button"
-            aria-label="Open project directory"
-            title="Open project directory"
+            aria-label="打开创作目录"
+            title="打开创作目录"
             aria-controls="responsive-drawer"
             :aria-expanded="openDrawer === 'project'"
             @click="openResponsiveDrawer('project', $event)"
@@ -168,8 +168,8 @@ onBeforeUnmount(() => {
             v-if="!isDesktop"
             class="icon-button"
             type="button"
-            aria-label="Open run metrics"
-            title="Open run metrics"
+            aria-label="打开运行数据"
+            title="打开运行数据"
             aria-controls="responsive-drawer"
             :aria-expanded="openDrawer === 'metrics'"
             @click="openResponsiveDrawer('metrics', $event)"
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
           <div class="connection">
             <span class="status-dot" :class="{ connected, failed: checked && !connected }" aria-hidden="true" />
             <div>
-              <strong>{{ connected ? 'Connected' : checked ? 'Unavailable' : 'Connecting' }}</strong>
+              <strong>{{ connected ? '已连接' : checked ? '不可用' : '连接中' }}</strong>
               <span>VueSky -&gt; SprintbootSky -&gt; AgentSky</span>
             </div>
           </div>
@@ -200,13 +200,13 @@ onBeforeUnmount(() => {
         <section v-if="result?.completed_chapters.length" class="results" aria-labelledby="results-title">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Reviewed output</p>
-              <h2 id="results-title">Completed chapters</h2>
+              <p class="eyebrow">已审核内容</p>
+              <h2 id="results-title">已完成章节</h2>
             </div>
             <span v-if="tokenUsage" class="counter">{{ tokenUsage.total_tokens }} tokens</span>
           </div>
           <article v-for="(chapter, index) in result?.completed_chapters ?? []" :key="index" class="chapter">
-            <h3>Chapter {{ index + 1 }}</h3>
+            <h3>第 {{ index + 1 }} 章</h3>
             <p>{{ chapter }}</p>
           </article>
         </section>
@@ -222,7 +222,7 @@ onBeforeUnmount(() => {
       />
     </main>
 
-    <aside v-if="isDesktop" class="studio-inspector" aria-label="Run metrics">
+    <aside v-if="isDesktop" class="studio-inspector" aria-label="运行数据">
       <RunInspector
         :connected="connected"
         :status="status"
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
     <button
       class="drawer-backdrop"
       type="button"
-      :aria-label="openDrawer === 'project' ? 'Close project directory backdrop' : 'Close run metrics backdrop'"
+      :aria-label="openDrawer === 'project' ? '关闭创作目录背景层' : '关闭运行数据背景层'"
       @click="closeResponsiveDrawer()"
     />
     <aside
@@ -248,12 +248,12 @@ onBeforeUnmount(() => {
       ref="drawerDialog"
       role="dialog"
       aria-modal="true"
-      :aria-label="openDrawer === 'project' ? 'Project directory' : 'Run metrics'"
+      :aria-label="openDrawer === 'project' ? '创作目录' : '运行数据'"
     >
       <template v-if="openDrawer === 'project'">
         <header class="side-drawer__header">
-          <h2>Project directory</h2>
-          <button class="icon-button" type="button" aria-label="Close project directory" title="Close project directory" @click="closeResponsiveDrawer()">
+          <h2>创作目录</h2>
+          <button class="icon-button" type="button" aria-label="关闭创作目录" title="关闭创作目录" @click="closeResponsiveDrawer()">
             <PanelLeftClose :size="18" aria-hidden="true" />
           </button>
         </header>

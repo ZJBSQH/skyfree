@@ -47,8 +47,8 @@ describe('App content selection', () => {
   it('returns to Agent workspace when a selected chapter disappears from the result', async () => {
     render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Chapter 1' }))
-    expect(screen.getByRole('heading', { name: 'Chapter 1' })).toBeTruthy()
+    await fireEvent.click(screen.getByRole('button', { name: '第 1 章' }))
+    expect(screen.getByRole('heading', { name: '第 1 章' })).toBeTruthy()
 
     controller().result.value = {
       ...initialResult,
@@ -56,8 +56,8 @@ describe('App content selection', () => {
     }
 
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: 'Story idea' })).toBeTruthy()
-      expect(screen.getByRole('button', { name: 'Agent workspace' }).getAttribute('aria-current')).toBe('page')
+      expect(screen.getByRole('textbox', { name: '创作灵感' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: '智能体工作区' }).getAttribute('aria-current')).toBe('page')
     })
   })
 })

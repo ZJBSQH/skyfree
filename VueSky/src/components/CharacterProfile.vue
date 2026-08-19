@@ -7,7 +7,7 @@ const props = defineProps<{
 }>()
 
 const character = computed(() => normalizeCharacterCard(props.character) ?? {
-  name: 'Unnamed character',
+  name: '未命名人物',
   relationships: []
 })
 const initials = computed(() => Array.from(character.value.name).slice(0, 2).join(''))
@@ -15,7 +15,19 @@ const displayName = computed(() => character.value.name)
 const relationshipCount = computed(() => character.value.relationships?.length ?? 0)
 
 function provided(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : 'Not provided'
+  return typeof value === 'string' && value.trim() ? value.trim() : '未提供'
+}
+
+function roleLabel(value: unknown) {
+  const role = provided(value)
+  const labels: Record<string, string> = {
+    protagonist: '主角',
+    main: '主角',
+    supporting: '配角',
+    antagonist: '反派',
+    villain: '反派'
+  }
+  return labels[role.toLowerCase()] ?? role
 }
 </script>
 
@@ -24,35 +36,35 @@ function provided(value: unknown) {
     <header class="character-profile__header">
       <span class="character-profile__initials" aria-hidden="true">{{ initials }}</span>
       <div>
-        <p class="eyebrow">Character profile</p>
+        <p class="eyebrow">人物档案</p>
         <h2 id="character-profile-name">{{ displayName }}</h2>
-        <p class="character-profile__role">{{ provided(character.role_type) }}</p>
+        <p class="character-profile__role">{{ roleLabel(character.role_type) }}</p>
       </div>
     </header>
 
     <dl class="character-profile__details">
       <div>
-        <dt>Personality</dt>
+        <dt>性格</dt>
         <dd>{{ provided(character.personality) }}</dd>
       </div>
       <div>
-        <dt>Motivation</dt>
+        <dt>动机</dt>
         <dd>{{ provided(character.motivation) }}</dd>
       </div>
       <div>
-        <dt>Ability</dt>
+        <dt>能力</dt>
         <dd>{{ provided(character.ability) }}</dd>
       </div>
       <div>
-        <dt>Background</dt>
+        <dt>背景</dt>
         <dd>{{ provided(character.background) }}</dd>
       </div>
     </dl>
 
     <section class="character-profile__relationships" aria-labelledby="relationships-title">
       <div class="character-profile__relationships-heading">
-        <h3 id="relationships-title">Relationships</h3>
-        <span>{{ relationshipCount }} {{ relationshipCount === 1 ? 'relationship' : 'relationships' }}</span>
+        <h3 id="relationships-title">人物关系</h3>
+        <span>{{ relationshipCount }} 条关系</span>
       </div>
       <div v-if="relationshipCount" class="character-profile__relationship-list">
         <div v-for="(relationship, index) in character.relationships" :key="index" class="character-profile__relationship">

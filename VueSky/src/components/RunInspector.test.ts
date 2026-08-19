@@ -43,7 +43,7 @@ describe('RunInspector', () => {
   it('renders runtime values from the API and browser timer', () => {
     renderInspector()
 
-    for (const metric of ['Connected', 'Completed', '12,450', '8,000', '4,450', '¥0.0321', '8 calls', '02:05', '2', '3']) {
+    for (const metric of ['已连接', '已完成', '12,450', '8,000', '4,450', '¥0.0321', '8 次', '02:05', '2', '3']) {
       expect(screen.getByText(metric)).toBeTruthy()
     }
   })

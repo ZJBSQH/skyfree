@@ -49,7 +49,7 @@ function itemLabel(item: unknown, fallback: string) {
 }
 
 function characterLabel(character: unknown) {
-  return normalizeCharacterCard(character)?.name ?? 'Unnamed character'
+  return normalizeCharacterCard(character)?.name ?? '未命名人物'
 }
 </script>
 
@@ -57,12 +57,12 @@ function characterLabel(character: unknown) {
   <aside class="project-navigator">
     <div class="project-navigator__brand">
       <Sparkles :size="18" aria-hidden="true" />
-      <span>Freesky Studio</span>
+      <span>Freesky 创作台</span>
     </div>
 
-    <nav aria-label="Project navigation">
+    <nav aria-label="创作目录导航">
       <section class="project-navigator__section" aria-labelledby="agent-workspace">
-        <h2 id="agent-workspace">Agent workspace</h2>
+        <h2 id="agent-workspace">智能体工作区</h2>
         <button
           class="project-navigator__item"
           :class="{ 'project-navigator__item--active': isSelected({ type: 'agent' }) }"
@@ -71,13 +71,13 @@ function characterLabel(character: unknown) {
           @click="select({ type: 'agent' })"
         >
           <Bot :size="18" aria-hidden="true" />
-          <span>Agent workspace</span>
+          <span>智能体工作区</span>
         </button>
       </section>
 
       <section class="project-navigator__section" aria-labelledby="outline">
         <div class="project-navigator__heading">
-          <h2 id="outline">Outline</h2>
+          <h2 id="outline">大纲</h2>
           <span class="project-navigator__count">{{ result?.plot_outline.length ?? 0 }}</span>
         </div>
         <template v-if="result?.plot_outline.length">
@@ -87,18 +87,18 @@ function characterLabel(character: unknown) {
             class="project-navigator__item project-navigator__item--muted"
           >
             <ListTree :size="18" aria-hidden="true" />
-            <span>{{ itemLabel(outline, `Outline ${index + 1}`) }}</span>
+            <span>{{ itemLabel(outline, `大纲 ${index + 1}`) }}</span>
           </div>
         </template>
         <div v-else class="project-navigator__item project-navigator__item--muted">
           <ListTree :size="18" aria-hidden="true" />
-          <span>Story outline</span>
+          <span>故事大纲</span>
         </div>
       </section>
 
       <section class="project-navigator__section" aria-labelledby="chapters">
         <div class="project-navigator__heading">
-          <h2 id="chapters">Chapters</h2>
+          <h2 id="chapters">章节</h2>
           <span class="project-navigator__count">{{ result?.completed_chapters.length ?? 0 }}</span>
         </div>
         <button
@@ -111,13 +111,13 @@ function characterLabel(character: unknown) {
           @click="select({ type: 'chapter', index })"
         >
           <BookOpen :size="18" aria-hidden="true" />
-          <span>Chapter {{ index + 1 }}</span>
+          <span>第 {{ index + 1 }} 章</span>
         </button>
       </section>
 
       <section class="project-navigator__section" aria-labelledby="characters">
         <div class="project-navigator__heading">
-          <h2 id="characters">Characters</h2>
+          <h2 id="characters">人物</h2>
           <span class="project-navigator__count">{{ result?.characters.length ?? 0 }}</span>
         </div>
         <button
@@ -136,7 +136,7 @@ function characterLabel(character: unknown) {
 
       <section class="project-navigator__section" aria-labelledby="world">
         <div class="project-navigator__heading">
-          <h2 id="world">World</h2>
+          <h2 id="world">世界观</h2>
           <span class="project-navigator__count">{{ result?.world_settings.length ?? 0 }}</span>
         </div>
         <template v-if="result?.world_settings.length">
@@ -146,20 +146,20 @@ function characterLabel(character: unknown) {
             class="project-navigator__item project-navigator__item--muted"
           >
             <Globe2 :size="18" aria-hidden="true" />
-            <span>{{ itemLabel(setting, `Setting ${index + 1}`) }}</span>
+            <span>{{ itemLabel(setting, `设定 ${index + 1}`) }}</span>
           </div>
         </template>
         <div v-else class="project-navigator__item project-navigator__item--muted">
           <Globe2 :size="18" aria-hidden="true" />
-          <span>World settings</span>
+          <span>世界设定</span>
         </div>
       </section>
 
       <section class="project-navigator__section" aria-labelledby="foreshadowing">
-        <h2 id="foreshadowing">Foreshadowing</h2>
+        <h2 id="foreshadowing">伏笔</h2>
         <div class="project-navigator__item project-navigator__item--muted">
           <Sparkles :size="18" aria-hidden="true" />
-          <span>Story threads</span>
+          <span>剧情线索</span>
         </div>
       </section>
     </nav>
