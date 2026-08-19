@@ -1,7 +1,7 @@
 # Freesky Creative Studio Handoff
 
 Date: 2026-08-19
-Status: Implementation and full regression verification complete; pending final re-review and branch integration
+Status: Complete; independently reviewed, merged into `main`, and pushed to GitHub
 
 ## Resume Update
 
@@ -28,7 +28,8 @@ The current API remains synchronous. The UI must never fake per-Agent live progr
 - Main workspace: `F:\Workspace\Agent\Freesky`
 - Isolated worktree: `F:\Workspace\Agent\Freesky\.worktrees\creative-studio-ui`
 - Branch: `codex/creative-studio-ui`
-- Current HEAD: run `git log -1 --oneline` for the latest reviewed fix commit.
+- Integration commit: `3b3bfa3 merge: integrate creative studio full-stack implementation`
+- Remote: `https://github.com/ZJBSQH/skyfree` (`main`)
 - Do all continuation work in the isolated worktree. Do not revert or overwrite the dirty main workspace.
 
 ## Completed And Committed
@@ -142,7 +143,7 @@ AgentSky pytest initially used the wrong Python and then waited on an online emb
    git diff --stat
    ```
 
-5. Complete the final independent re-review, then choose merge, PR, or keep the branch.
+5. Continue product development from `main`; the first full-stack creative studio milestone is integrated.
 
 ## Final Review Findings Being Resolved
 
