@@ -19,7 +19,13 @@ class RejectedWorkflow:
         result.update({
             "phase": "failed",
             "current_draft": "unapproved draft",
-            "review_issues": [{"severity": "critical"}],
+            "review_issues": [{
+                "severity": "critical",
+                "category": "logic_flaw",
+                "description": "broken cause",
+                "target_agent": "writer",
+                "suggestion": "repair it",
+            }],
             "review_round": 3,
         })
         return result
@@ -123,7 +129,10 @@ def test_create_fails_when_workflow_has_no_reviewed_chapter(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["success"] is False
-    assert response.json()["result"] == {}
+    assert response.json()["result"]["current_draft"] == "unapproved draft"
+    assert response.json()["result"]["review_round"] == 3
+    assert response.json()["result"]["review_issues"][0]["description"] == "broken cause"
+    assert response.json()["logs"]
     assert response.json()["error_code"] == "REVIEW_NOT_APPROVED"
     assert response.json()["error"] == "正文在最大审核轮次内未通过，请调整创作灵感后重试"
     assert response.json()["token_usage"]["total_tokens"] == 0

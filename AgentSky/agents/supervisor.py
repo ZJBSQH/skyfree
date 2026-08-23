@@ -166,13 +166,22 @@ class SupervisorAgent(BaseAgent):
         minors = [i for i in issues if i.get("severity") == "minor"]
         actionable = criticals + majors  # critical 和 major 都需要处理
 
-        # 强制结束：已达最大轮次
+        # 强制结束：已达最大轮次，保留最后草稿作为带警告结果返回。
         if review_round >= max_rounds:
-            print(f"  [Supervisor] review_round={review_round} >= max={max_rounds}, 审核失败")
+            completed = list(state.get("completed_chapters", []))
+            draft = state.get("current_draft", "")
+            if draft and draft not in completed:
+                completed.append(draft)
+            print(f"  [Supervisor] review_round={review_round} >= max={max_rounds}, 带警告返回最后草稿")
             return {
-                "phase": "failed", "next_action": "finish",
+                "phase": "done", "next_action": "finish",
                 "task_context": "",
-                "supervisor_log": ["[Supervisor] 已达最大审核轮次，正文未获批准"],
+                "completed_chapters": completed,
+                "current_draft": draft,
+                "review_issues": issues,
+                "review_passed": False,
+                "review_round": review_round,
+                "supervisor_log": ["[Supervisor] 已达最大审核轮次，带警告返回最后草稿"],
             }
 
         # critical 或 major → 路由到对应 agent 修复

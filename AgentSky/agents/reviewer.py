@@ -50,11 +50,19 @@ SYSTEM_PROMPT = """你是一位严苛的小说质量审核专家。你的工作�
   "approved_content": "已通过无需修改的部分描述"
 }
 
+## 字段枚举约束
+- severity 只能是：critical、major、minor
+- category 只能是：setting_conflict、logic_flaw、character_ooc、style、deviation
+- target_agent 只能是：setting、character、plot、writer
+- 不得输出上述列表之外的英文、中文或自定义枚举值
+
 ## 审核原则
 - 宁可错杀不可放过：不确定的问题也标记为 minor
 - 精准定位：每个问题精确到具体段落/句子
 - 给出方案：不只指出问题，必须给可操作的修改建议
 - 保护成果：明确标注已通过的部分
+- 如果只有 minor 问题，passed=true, issues 保留为警告
+- 如果存在 critical 或 major 问题，passed=false
 - 如果没有问题，passed=true, issues=[]
 """
 
@@ -85,11 +93,19 @@ class ReviewerAgent(BaseAgent):
         summary = result.get("summary", "")
         if any(not isinstance(issue, dict) for issue in issues):
             raise ValueError("reviewer field issues must contain objects")
-        if passed and issues:
-            raise ValueError("reviewer passed result must not include issues")
+        issues = self._normalize_issues(issues)
+        self._validate_issues(issues)
+        blocking_issues = [
+            issue for issue in issues
+            if issue.get("severity") in {"critical", "major"}
+        ]
+        if blocking_issues:
+            passed = False
+        elif issues:
+            passed = True
+            summary = f"{summary}（仅有minor问题，作为警告通过）"
         if not passed and not issues:
             raise ValueError("reviewer failed result must include at least one issue")
-        self._validate_issues(issues)
 
         status = "PASS" if passed else f"FAIL ({len(issues)}个问题)"
         print(f"  [ReviewerAgent] {status} | {summary}")
@@ -127,6 +143,57 @@ class ReviewerAgent(BaseAgent):
             for field, values in allowed.items():
                 if issue[field] not in values:
                     raise ValueError(f"reviewer issue field {field} has invalid value")
+
+    @staticmethod
+    def _normalize_issues(issues: list[dict]) -> list[dict]:
+        aliases = {
+            "severity": {
+                "high": "critical",
+                "严重": "critical",
+                "高": "critical",
+                "高危": "critical",
+                "medium": "major",
+                "主要": "major",
+                "中等": "major",
+                "中": "major",
+                "low": "minor",
+                "轻微": "minor",
+                "低": "minor",
+            },
+            "category": {
+                "设定冲突": "setting_conflict",
+                "世界观冲突": "setting_conflict",
+                "剧情逻辑": "logic_flaw",
+                "逻辑漏洞": "logic_flaw",
+                "人物ooc": "character_ooc",
+                "角色ooc": "character_ooc",
+                "文笔风格": "style",
+                "文笔": "style",
+                "需求偏离": "deviation",
+                "偏离需求": "deviation",
+            },
+            "target_agent": {
+                "设定": "setting",
+                "设定师": "setting",
+                "人物": "character",
+                "角色": "character",
+                "人物设计师": "character",
+                "剧情": "plot",
+                "剧情策划": "plot",
+                "写手": "writer",
+                "作者": "writer",
+            },
+        }
+        normalized = []
+        for issue in issues:
+            item = dict(issue)
+            for field, mapping in aliases.items():
+                value = item.get(field)
+                if isinstance(value, str):
+                    cleaned = value.strip()
+                    item[field] = mapping.get(cleaned.lower(), cleaned)
+            normalized.append(item)
+        return normalized
 
     def _build_user_prompt(self, state: AgentSkyState) -> str:
         parts = []

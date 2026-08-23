@@ -17,6 +17,31 @@ class FakeModel:
         return SimpleNamespace(content=self.payload, response_metadata={})
 
 
+class ReviewerContractModel:
+    """Return a valid issue only when the reviewer exposes its full enum contract."""
+
+    def invoke(self, messages):
+        system_prompt = messages[0].content
+        allowed_values = {
+            "critical", "major", "minor",
+            "setting_conflict", "logic_flaw", "character_ooc", "style", "deviation",
+            "setting", "character", "plot", "writer",
+        }
+        severity = "major" if all(value in system_prompt for value in allowed_values) else "blocker"
+        payload = {
+            "passed": False,
+            "summary": "needs work",
+            "issues": [{
+                "severity": severity,
+                "category": "logic_flaw",
+                "description": "broken cause",
+                "target_agent": "writer",
+                "suggestion": "repair it",
+            }],
+        }
+        return SimpleNamespace(content=__import__("json").dumps(payload), response_metadata={})
+
+
 class ConcreteAgent(BaseAgent):
     def invoke(self, state):
         return {}
@@ -69,7 +94,7 @@ def test_reviewer_rejects_json_without_required_fields():
         agent.invoke(state)
 
 
-def test_reviewer_rejects_passed_result_with_issues():
+def test_reviewer_treats_passed_result_with_issues_as_failed_review():
     state = make_initial_state("test novel")
     state["current_draft"] = "draft"
     payload = (
@@ -80,8 +105,16 @@ def test_reviewer_rejects_passed_result_with_issues():
     )
     agent = ReviewerAgent(FakeModel(payload), REVIEWER_PROMPT)
 
-    with pytest.raises(ValueError, match="passed result must not include issues"):
-        agent.invoke(state)
+    result = agent.invoke(state)
+
+    assert result["review_passed"] is False
+    assert result["review_issues"] == [{
+        "severity": "critical",
+        "category": "logic_flaw",
+        "description": "broken cause",
+        "target_agent": "writer",
+        "suggestion": "repair it",
+    }]
 
 
 @pytest.mark.parametrize(
@@ -106,7 +139,66 @@ def test_reviewer_rejects_invalid_issue_enums(field, value):
         agent.invoke(state)
 
 
-def test_supervisor_marks_review_exhaustion_as_failed():
+def test_reviewer_prompt_exposes_the_complete_issue_enum_contract():
+    state = make_initial_state("test novel")
+    state["current_draft"] = "draft"
+    agent = ReviewerAgent(ReviewerContractModel(), REVIEWER_PROMPT)
+
+    result = agent.invoke(state)
+
+    assert result["review_issues"][0]["severity"] == "major"
+
+
+def test_reviewer_normalizes_common_issue_aliases_before_validation():
+    state = make_initial_state("test novel")
+    state["current_draft"] = "draft"
+    payload = {
+        "passed": False,
+        "summary": "needs work",
+        "issues": [{
+            "severity": "HIGH",
+            "category": "剧情逻辑",
+            "description": "broken cause",
+            "target_agent": "写手",
+            "suggestion": "repair it",
+        }],
+    }
+    agent = ReviewerAgent(FakeModel(__import__("json").dumps(payload)), REVIEWER_PROMPT)
+
+    result = agent.invoke(state)
+
+    assert result["review_issues"] == [{
+        "severity": "critical",
+        "category": "logic_flaw",
+        "description": "broken cause",
+        "target_agent": "writer",
+        "suggestion": "repair it",
+    }]
+
+
+def test_reviewer_allows_minor_issues_as_warnings():
+    state = make_initial_state("test novel")
+    state["current_draft"] = "draft"
+    payload = {
+        "passed": False,
+        "summary": "minor polish only",
+        "issues": [{
+            "severity": "minor",
+            "category": "style",
+            "description": "one sentence can be sharper",
+            "target_agent": "writer",
+            "suggestion": "tighten the wording",
+        }],
+    }
+    agent = ReviewerAgent(FakeModel(__import__("json").dumps(payload)), REVIEWER_PROMPT)
+
+    result = agent.invoke(state)
+
+    assert result["review_passed"] is True
+    assert result["review_issues"][0]["severity"] == "minor"
+
+
+def test_supervisor_commits_draft_with_warnings_when_review_rounds_are_exhausted():
     state = _ready_state()
     state.update({
         "phase": "review",
@@ -124,5 +216,8 @@ def test_supervisor_marks_review_exhaustion_as_failed():
 
     result = SupervisorAgent(FakeModel("{}"), SUPERVISOR_PROMPT).invoke(state)
 
-    assert result["phase"] == "failed"
+    assert result["phase"] == "done"
     assert result["next_action"] == "finish"
+    assert result["completed_chapters"] == ["unapproved draft"]
+    assert result["current_draft"] == "unapproved draft"
+    assert result["review_issues"][0]["description"] == "broken cause"

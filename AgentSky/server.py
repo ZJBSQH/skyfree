@@ -169,7 +169,7 @@ def _create_novel(req: CreateRequest):
             return CreateResponse(
                 success=False,
                 logs=logs,
-                result={},
+                result=serializable,
                 error="正文在最大审核轮次内未通过，请调整创作灵感后重试",
                 error_code="REVIEW_NOT_APPROVED",
                 token_usage=tracker.to_dict(),

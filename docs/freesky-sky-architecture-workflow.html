@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Freesky 三端实现框架与工作流说明</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2a25;
+      --muted: #65706b;
+      --line: #d9dfdb;
+      --soft: #f4f6f4;
+      --panel: #ffffff;
+      --accent: #236849;
+      --accent-2: #5d4b8f;
+      --accent-3: #a85b2f;
+      --code-bg: #17211c;
+      --code-ink: #eef6ef;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #f8faf8;
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 22px 72px;
+    }
+
+    header {
+      padding: 28px 0 24px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 48px);
+      letter-spacing: 0;
+      line-height: 1.15;
+    }
+
+    h2 {
+      margin: 44px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+      font-size: 25px;
+    }
+
+    h3 {
+      margin: 26px 0 10px;
+      font-size: 18px;
+    }
+
+    p { margin: 10px 0; }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 22px 0;
+    }
+
+    .card {
+      min-height: 128px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-size: 17px;
+    }
+
+    .flow {
+      margin: 14px 0;
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent);
+      background: var(--soft);
+      font-family: Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      margin: 12px 0 20px;
+      padding: 16px;
+      border-radius: 8px;
+      color: var(--code-ink);
+      background: var(--code-bg);
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    code { font-family: Consolas, "Courier New", monospace; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 24px;
+      background: var(--panel);
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef3ef;
+      color: #27312c;
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 4px 6px 4px 0;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #304039;
+      background: #fff;
+      font-size: 12px;
+    }
+
+    .note {
+      margin: 18px 0;
+      padding: 14px 16px;
+      border: 1px solid #d9c9b9;
+      border-radius: 8px;
+      background: #fff8f0;
+    }
+
+    .accent-vue { color: var(--accent); }
+    .accent-java { color: var(--accent-2); }
+    .accent-python { color: var(--accent-3); }
+
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      main { padding: 26px 16px 56px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Freesky 三个 Sky 文件夹实现框架与工作流</h1>
+    <p class="subtitle">
+      本文基于 <code>AgentSky</code>、<code>SprintbootSky</code>、<code>VueSky</code> 当前代码整理。
+      每一段都附有可追溯的代码声明，并用 <code>-&gt;</code> 表示模块、请求、状态之间的流动关系。
+    </p>
+  </header>
+
+  <section>
+    <h2>总览</h2>
+    <div class="grid">
+      <article class="card">
+        <strong class="accent-python">AgentSky</strong>
+        <p>Python FastAPI + LangGraph 多 Agent 小说创作运行时。它接收灵感文本，编排设定、人物、剧情、写作和审核。</p>
+      </article>
+      <article class="card">
+        <strong class="accent-java">SprintbootSky</strong>
+        <p>Java 21 Spring Boot 业务后端。它负责认证、业务事务、调用 AgentSky、防腐转换、MySQL 持久化和 Redis 缓存。</p>
+      </article>
+      <article class="card">
+        <strong class="accent-vue">VueSky</strong>
+        <p>Vue 3 + Vite 创作台前端。它负责输入创作灵感、展示 Agent 日志、章节、人物、运行数据和响应式布局。</p>
+      </article>
+    </div>
+    <div class="flow">VueSky 创作台 -&gt; SprintbootSky 业务 API -&gt; AgentSky 多 Agent 工作流 -&gt; SprintbootSky 落库/缓存 -&gt; VueSky 展示结果</div>
+  </section>
+
+  <section>
+    <h2>AgentSky 实现框架</h2>
+    <p>
+      AgentSky 的核心是一个共享状态对象和一个 LangGraph 图。所有 Agent 都围绕 <code>AgentSkyState</code> 读写字段，
+      Supervisor 负责决定下一跳，专业 Agent 负责产出结构化 JSON。
+    </p>
+
+    <h3>代码声明</h3>
+    <pre><code># AgentSky/state.py
+class AgentSkyState(TypedDict):
+    user_request: str
+    phase: str
+    task_context: str
+    world_settings: list[SettingEntry]
+    characters: list[CharacterCard]
+    plot_outline: list[PlotNode]
+    foreshadowing_bank: list[dict]
+    current_draft: str
+    completed_chapters: list[str]
+    review_issues: list[ReviewIssue]
+    review_passed: bool
+    review_round: int
+    max_review_rounds: int
+    messages: Annotated[list, add_messages]
+
+# AgentSky/graph/workflow.py
+builder.add_node("supervisor", supervisor_node)
+builder.add_node("setting", setting_node)
+builder.add_node("character", character_node)
+builder.add_node("plot", plot_node)
+builder.add_node("writer", writer_node)
+builder.add_node("reviewer", reviewer_node)
+
+builder.add_edge(START, "supervisor")
+builder.add_edge("setting", "supervisor")
+builder.add_edge("character", "supervisor")
+builder.add_edge("plot", "supervisor")
+builder.add_edge("writer", "reviewer")</code></pre>
+
+    <h3>框架关系</h3>
+    <div class="flow">make_initial_state(idea) -&gt; AgentSkyState
+AgentSkyState -&gt; StateGraph(AgentSkyState)
+StateGraph -&gt; supervisor / setting / character / plot / writer / reviewer
+每个 Agent 返回 dict 或 Command -&gt; LangGraph 合并 update -&gt; 下一节点继续执行</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>模块</th>
+          <th>职责</th>
+          <th>关键代码声明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>main.py</code></td>
+          <td>CLI 入口，初始化模型、创建工作流、运行完整创作流程。</td>
+          <td><code>workflow = create_workflow(model)</code> -&gt; <code>workflow.invoke(state)</code></td>
+        </tr>
+        <tr>
+          <td><code>server.py</code></td>
+          <td>FastAPI HTTP 包装层，提供 <code>/api/create</code> 与 <code>/api/health</code>。</td>
+          <td><code>@app.post("/api/create")</code> -&gt; <code>_create_novel(req)</code></td>
+        </tr>
+        <tr>
+          <td><code>llm/config.py</code></td>
+          <td>DeepSeek ChatOpenAI 初始化与 TokenTracker 统计。</td>
+          <td><code>ChatOpenAI(model="deepseek-chat", base_url="https://api.deepseek.com")</code></td>
+        </tr>
+        <tr>
+          <td><code>agents/base.py</code></td>
+          <td>统一 LLM 调用、JSON 抽取、schema 校验、RAG 检索和 token 记录。</td>
+          <td><code>_call_llm_json()</code> -&gt; <code>_extract_json()</code> -&gt; <code>_validate_result()</code></td>
+        </tr>
+        <tr>
+          <td><code>agents/rag.py</code></td>
+          <td>读取 <code>data/reference/*.txt</code>，用 sentence-transformers + FAISS 做参考资料检索。</td>
+          <td><code>get_store()</code> -&gt; <code>ingest_from_folder()</code> -&gt; <code>search(query)</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>AgentSky 工作流</h2>
+    <p>
+      AgentSky 的业务工作流由 Supervisor 决策驱动。蓝图未齐时补设定、人物、大纲；蓝图齐备后写正文；
+      正文必须经过 Reviewer，未通过时按问题类型回到对应 Agent 返工。
+    </p>
+
+    <h3>路由与闭环代码声明</h3>
+    <pre><code># AgentSky/agents/supervisor.py
+if review_passed and has_draft:
+    return self._commit_reviewed_chapter(state)
+
+if not review_passed and has_draft and review_issues:
+    return self._handle_review(state)
+
+if blueprints_ready:
+    return self._route_blueprint_ready(state)
+
+return self._route_by_llm(state)
+
+# AgentSky/graph/workflow.py
+def supervisor_node(state: AgentSkyState) -&gt; Command:
+    result = _AGENTS["supervisor"].invoke(state)
+    target = result.pop("next_action", "finish")
+    goto = target if target in VALID_NODES else END
+    return Command(goto=goto, update=result)
+
+def reviewer_node(state: AgentSkyState) -&gt; Command:
+    result = _AGENTS["reviewer"].invoke(state)
+    return Command(goto="supervisor", update=result)</code></pre>
+
+    <h3>完整工作流</h3>
+    <div class="flow">用户 idea -&gt; make_initial_state
+make_initial_state -&gt; supervisor
+supervisor phase=init -&gt; setting
+setting new_settings -&gt; world_settings -&gt; supervisor
+supervisor 缺人物 -&gt; character
+character new_characters -&gt; characters -&gt; supervisor
+supervisor 缺大纲 -&gt; plot
+plot plot_nodes + foreshadowing_plan -&gt; plot_outline + foreshadowing_bank -&gt; supervisor
+supervisor 蓝图齐备 -&gt; writer
+writer content -&gt; current_draft -&gt; reviewer
+reviewer passed=true -&gt; supervisor -&gt; completed_chapters -&gt; 下一章或 finish
+reviewer passed=false -&gt; review_issues.target_agent -&gt; setting/character/plot/writer 返工 -&gt; writer -&gt; reviewer</div>
+
+    <h3>专业 Agent 输出协议</h3>
+    <pre><code># AgentSky/agents/setting.py
+{
+  "new_settings": [{"category": "...", "key": "...", "content": "..."}],
+  "conflict_report": "无冲突",
+  "summary": "..."
+}
+
+# AgentSky/agents/character.py
+{
+  "new_characters": [{"name": "...", "role_type": "...", "relationships": [...]}],
+  "consistency_check": "...",
+  "summary": "..."
+}
+
+# AgentSky/agents/plot.py
+{
+  "plot_nodes": [{"id": "ch_01", "title": "...", "summary": "..."}],
+  "foreshadowing_plan": [{"id": "fs_01", "planted_in": "...", "resolved_in": "..."}],
+  "structure_analysis": "...",
+  "summary": "..."
+}
+
+# AgentSky/agents/writer.py
+{
+  "chapter_id": "ch_01",
+  "chapter_title": "...",
+  "content": "正文全文",
+  "self_check": {"ooc_check": "...", "setting_check": "..."}
+}
+
+# AgentSky/agents/reviewer.py
+{
+  "passed": false,
+  "issues": [{
+    "severity": "critical|major|minor",
+    "category": "setting_conflict|logic_flaw|character_ooc|style|deviation",
+    "target_agent": "setting|character|plot|writer",
+    "suggestion": "..."
+  }],
+  "summary": "..."
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>SprintbootSky 实现框架</h2>
+    <p>
+      SprintbootSky 是三端之间的业务中枢。它不直接把 AgentSky 的原始响应暴露给前端，而是用
+      <code>AgentSkyGateway</code> 端口与 <code>AgentSkyGatewayAdapter</code> 防腐层把 HTTP、异常、JSON 和安全清洗隔离起来。
+    </p>
+
+    <h3>分层代码声明</h3>
+    <pre><code># SprintbootSky/interfaces/novel/NovelController.java
+@RestController
+@RequestMapping("/api/novels")
+public class NovelController {
+    @PostMapping
+    public ResponseEntity&lt;CreateNovelResponse&gt; createNovel(
+            @Valid @RequestBody CreateNovelRequest request,
+            @AuthenticationPrincipal Long userId) {
+        NovelCreationResult result = novelApplicationService.createNovel(userId, request.idea());
+        return ResponseEntity.status(result.success() ? HttpStatus.OK : HttpStatus.BAD_GATEWAY)
+                .body(CreateNovelResponse.from(result));
+    }
+}
+
+# SprintbootSky/application/port/out/AgentSkyGateway.java
+public interface AgentSkyGateway {
+    AgentSkyHealth checkHealth();
+    AgentSkyCreateResult create(String idea);
+}
+
+# SprintbootSky/infrastructure/agentsky/AgentSkyClient.java
+return restClient.post()
+    .uri("/api/create")
+    .header("X-AgentSky-Token", apiToken)
+    .body(Map.of("idea", idea))
+    .retrieve()
+    .body(String.class);</code></pre>
+
+    <h3>后端层次关系</h3>
+    <div class="flow">Controller interfaces -&gt; Application Service -&gt; Domain Aggregate
+Application Service -&gt; Port: AgentSkyGateway / NovelCachePort / UserRepository
+Infrastructure Adapter -&gt; AgentSky HTTP / MyBatis-Plus / Redis / JWT
+Repository Adapter -&gt; MySQL tables
+Security Filter -&gt; @AuthenticationPrincipal Long userId -&gt; protected business APIs</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>模块</th>
+          <th>职责</th>
+          <th>关键代码声明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>AuthController</code> + <code>AuthApplicationService</code></td>
+          <td>注册、登录、当前用户查询；通过 <code>TokenIssuer</code> 签发 JWT。</td>
+          <td><code>/api/auth/register</code> / <code>/api/auth/login</code> -&gt; <code>AuthResult.withToken(...)</code></td>
+        </tr>
+        <tr>
+          <td><code>SecurityConfig</code></td>
+          <td>公开健康检查和登录注册接口，其余 API 需要 JWT，后端保持无 session。</td>
+          <td><code>.anyRequest().authenticated()</code> -&gt; <code>JwtAuthenticationFilter</code></td>
+        </tr>
+        <tr>
+          <td><code>NovelApplicationService</code></td>
+          <td>创建小说用例编排，负责用户校验、短事务、调用 AgentSky、转换结果、缓存更新。</td>
+          <td><code>startCreation()</code> -&gt; <code>agentSkyGateway.create(idea)</code> -&gt; <code>completeCreation()</code></td>
+        </tr>
+        <tr>
+          <td><code>NovelProject</code></td>
+          <td>小说项目聚合根，控制 <code>CREATING</code> 到 <code>COMPLETED</code> 或 <code>FAILED</code> 的合法状态迁移。</td>
+          <td><code>NovelProject.start()</code> -&gt; <code>complete(...)</code> / <code>markFailed(...)</code></td>
+        </tr>
+        <tr>
+          <td><code>MyBatisNovelProjectRepository</code></td>
+          <td>组合项目、章节、人物、日志、Token 用量 Mapper 完成聚合持久化。</td>
+          <td><code>saveCompleted(project)</code> -&gt; <code>novel_project</code> + <code>chapter</code> + <code>character_profile</code> + <code>run_log</code> + <code>token_usage</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>SprintbootSky 工作流</h2>
+    <p>
+      Spring Boot 创建小说时刻意拆成短事务。外部 LLM 创作可能耗时很长，因此调用 AgentSky 时不占用数据库事务和连接。
+      成功时整体落库，失败时写入安全错误并返回稳定业务响应。
+    </p>
+
+    <h3>事务边界代码声明</h3>
+    <pre><code># SprintbootSky/application/novel/NovelApplicationService.java
+userRepository.findById(userId).orElseThrow(...)
+NovelProject project = NovelProject.start(userId, idea);
+Long novelId = transactionService.startCreation(project);
+
+AgentSkyCreateResult outcome = agentSkyGateway.create(idea);
+if (!outcome.success()) {
+    transactionService.markCreationFailed(novelId, outcome.error());
+    novelCachePort.evictRecentProjects(userId);
+    return NovelCreationResult.failure(outcome.error(), outcome.tokenUsage());
+}
+
+project.complete(
+    outcome.result().worldSettings(),
+    outcome.result().plotOutline(),
+    outcome.result().characters(),
+    toChapters(outcome.result()),
+    toRunLogs(outcome.logs()),
+    outcome.tokenUsage(),
+    outcome.result().reviewRound());
+transactionService.completeCreation(project);
+
+# SprintbootSky/application/novel/NovelTransactionService.java
+@Transactional
+public Long startCreation(NovelProject project)
+
+@Transactional
+public void completeCreation(NovelProject project)
+
+@Transactional
+public void markCreationFailed(Long novelProjectId, String safeErrorMessage)</code></pre>
+
+    <h3>创建小说工作流</h3>
+    <div class="flow">POST /api/novels + JWT -&gt; NovelController
+NovelController -&gt; NovelApplicationService.createNovel(userId, idea)
+createNovel -&gt; UserRepository.findById(userId)
+User ok -&gt; NovelProject.start(userId, idea)
+NovelProject.start -&gt; NovelTransactionService.startCreation -&gt; MySQL novel_project(CREATING)
+提交事务 -&gt; AgentSkyGateway.create(idea)
+AgentSkyGatewayAdapter -&gt; AgentSkyClient.post("/api/create", X-AgentSky-Token)
+AgentSky raw JSON -&gt; AgentSkyResponseSanitizer -&gt; AgentSkyCreateResult
+success -&gt; NovelProject.complete(...) -&gt; completeCreation -&gt; MySQL 多表保存
+failure -&gt; markCreationFailed -&gt; MySQL novel_project(FAILED)
+事务提交后 -&gt; Redis cacheLatestNovel/cacheNovelSummary/evictRecentProjects
+NovelCreationResult -&gt; CreateNovelResponse -&gt; VueSky</div>
+
+    <h3>AgentSky 防腐与错误收敛</h3>
+    <pre><code># SprintbootSky/infrastructure/agentsky/AgentSkyGatewayAdapter.java
+catch (RestClientResponseException exception) {
+    return AgentSkyCreateResult.failure(
+        httpErrorMessage(exception), httpErrorCode(exception), zeroUsage());
+}
+
+catch (ResourceAccessException exception) {
+    return AgentSkyCreateResult.failure(
+        "创作服务连接失败，请稍后重试", "AGENTSKY_UNAVAILABLE", zeroUsage());
+}
+
+if (Boolean.TRUE.equals(raw.success())) {
+    return AgentSkyCreateResult.success(
+        sanitizer.sanitizeLogs(raw.logs()),
+        parseResult(raw.result()),
+        sanitizer.sanitizeTokenUsage(raw.tokenUsage()));
+}
+
+return AgentSkyCreateResult.failure(
+    sanitizer.publicErrorMessage(raw.errorCode()),
+    raw.errorCode() == null ? "" : raw.errorCode(),
+    sanitizer.sanitizeTokenUsage(raw.tokenUsage()));</code></pre>
+  </section>
+
+  <section>
+    <h2>VueSky 实现框架</h2>
+    <p>
+      VueSky 是一个创作台界面。<code>App.vue</code> 管整体布局、抽屉和选中内容；
+      <code>useNovelRun</code> 管 HTTP 请求、连接检查、运行状态、日志解析和结果规范化；
+      组件层只接收 props 并发出事件。
+    </p>
+
+    <h3>前端代码声明</h3>
+    <pre><code># VueSky/vite.config.ts
+server: {
+  proxy: {
+    "/api": {
+      target: "http://localhost:8080",
+      changeOrigin: true
+    }
+  }
+}
+
+# VueSky/src/App.vue
+const {
+  connected, checked, status, events, result, tokenUsage, error,
+  elapsedSeconds, checkConnection, generate
+} = useNovelRun()
+
+onMounted(() =&gt; {
+  checkConnection()
+  window.addEventListener("resize", updateViewport)
+  window.addEventListener("keydown", handleKeydown)
+})
+
+# VueSky/src/composables/useNovelRun.ts
+const response = await fetch("/api/novels", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ idea: idea.trim() })
+})
+
+events.value = parseAgentLogs(payload.logs ?? [])
+result.value = normalizeNovelResult(payload.result)
+status.value = "completed"</code></pre>
+
+    <h3>组件关系</h3>
+    <div class="flow">main.ts -&gt; App.vue
+App.vue -&gt; useNovelRun()
+App.vue -&gt; ProjectNavigator(result, selection)
+App.vue -&gt; AgentWorkspace(status, events, connected, errorMessage)
+AgentWorkspace submit -&gt; emit("generate", idea) -&gt; App.generateNovel -&gt; useNovelRun.generate
+App.vue -&gt; RunInspector(tokenUsage, elapsedSeconds, reviewRound, completedChapterCount)
+App.vue -&gt; ChapterReader(selectedChapter)
+App.vue -&gt; CharacterProfile(selectedCharacter)</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>模块</th>
+          <th>职责</th>
+          <th>关键代码声明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>useNovelRun.ts</code></td>
+          <td>封装运行状态机：<code>idle</code>、<code>running</code>、<code>completed</code>、<code>failed</code>。</td>
+          <td><code>generate(idea)</code> -&gt; <code>fetch("/api/novels")</code> -&gt; <code>normalizeNovelResult</code></td>
+        </tr>
+        <tr>
+          <td><code>types/novel.ts</code></td>
+          <td>定义 AgentEvent、TokenUsage、CharacterCard、NovelResult，并清洗后端返回结构。</td>
+          <td><code>normalizeNovelResult(value)</code> -&gt; <code>completed_chapters / characters / world_settings / plot_outline</code></td>
+        </tr>
+        <tr>
+          <td><code>AgentWorkspace.vue</code></td>
+          <td>输入创作灵感、显示运行状态和 Agent 时间线。</td>
+          <td><code>submit()</code> -&gt; <code>emit("generate", idea.value.trim())</code></td>
+        </tr>
+        <tr>
+          <td><code>AgentTimeline.vue</code></td>
+          <td>把后端日志前缀映射成主编、设定师、人物设计师、剧情策划、写手、审核员。</td>
+          <td><code>[SupervisorAgent]</code> -&gt; <code>supervisor</code> -&gt; <code>主编</code></td>
+        </tr>
+        <tr>
+          <td><code>ProjectNavigator.vue</code></td>
+          <td>展示大纲、章节、人物、世界观目录，并通过 selection 切换主内容区。</td>
+          <td><code>select({ type: "chapter", index })</code> -&gt; <code>App.selectedContent</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>VueSky 工作流</h2>
+    <h3>运行状态代码声明</h3>
+    <pre><code># VueSky/src/composables/useNovelRun.ts
+async function checkConnection() {
+  const response = await fetch("/api/agent/health")
+  const health: HealthResponse = await response.json()
+  connected.value = health.status === "ok"
+}
+
+async function generate(idea: string) {
+  status.value = "running"
+  events.value = []
+  result.value = null
+  tokenUsage.value = null
+
+  const response = await fetch("/api/novels", ...)
+  const payload: GenerateResponse = await response.json()
+  tokenUsage.value = payload.token_usage ?? null
+
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.error || "创作失败，请稍后重试")
+  }
+
+  events.value = parseAgentLogs(payload.logs ?? [])
+  result.value = normalizeNovelResult(payload.result)
+  status.value = "completed"
+}</code></pre>
+
+    <h3>前端用户路径</h3>
+    <div class="flow">页面 mounted -&gt; checkConnection()
+checkConnection -&gt; GET /api/agent/health -&gt; connected/checked
+用户输入 idea -&gt; AgentWorkspace.submit()
+submit -&gt; App.generateNovel(idea)
+generateNovel -&gt; useNovelRun.generate(idea)
+generate -&gt; status=running + elapsedTimer
+fetch("/api/novels") -&gt; SprintbootSky
+payload.logs -&gt; parseAgentLogs -&gt; AgentTimeline
+payload.result -&gt; normalizeNovelResult -&gt; ProjectNavigator / ChapterReader / CharacterProfile
+payload.token_usage -&gt; RunInspector
+异常或业务失败 -&gt; status=failed -&gt; errorMessage + retry</div>
+  </section>
+
+  <section>
+    <h2>三个 Sky 如何联通</h2>
+    <p>
+      三个项目通过 HTTP API 和稳定的数据协议联通。VueSky 在开发环境由 Vite 代理 <code>/api</code> 到 Spring Boot；
+      SprintbootSky 用 RestClient 调 AgentSky；AgentSky 用 FastAPI 暴露创作与健康检查。
+    </p>
+
+    <h3>连接配置代码声明</h3>
+    <pre><code># VueSky/vite.config.ts
+"/api" -&gt; "http://localhost:8080"
+
+# SprintbootSky/src/main/resources/application.yml
+server.port: 8080
+agentsky.base-url: ${AGENTSKY_BASE_URL:http://127.0.0.1:8765}
+agentsky.api-token: ${AGENTSKY_API_TOKEN:}
+
+# AgentSky/server.py
+@app.post("/api/create", response_model=CreateResponse)
+def create_novel(req: CreateRequest, service_token: str | None = Header(...)):
+    expected_token = os.getenv("AGENTSKY_API_TOKEN", "").strip()
+    if service_token is None or not secrets.compare_digest(service_token, expected_token):
+        raise HTTPException(status_code=401, detail="Invalid AgentSky service token")
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok" if configured else "unavailable", "service": "agentsky"}</code></pre>
+
+    <h3>端到端请求链</h3>
+    <div class="flow">浏览器 VueSky :5173
+-&gt; fetch("/api/agent/health")
+-&gt; Vite proxy "/api" -&gt; SprintbootSky :8080
+-&gt; HealthController.agentHealth()
+-&gt; AgentSkyGateway.checkHealth()
+-&gt; AgentSkyClient.health()
+-&gt; AgentSky :8765 GET /api/health
+-&gt; {"status":"ok|unavailable","service":"agentsky"}
+-&gt; VueSky connected</div>
+
+    <div class="flow">浏览器 VueSky :5173
+-&gt; AgentWorkspace idea
+-&gt; useNovelRun.generate()
+-&gt; POST /api/novels {"idea":"..."}
+-&gt; Vite proxy -&gt; SprintbootSky :8080
+-&gt; SecurityConfig/JwtAuthenticationFilter -&gt; @AuthenticationPrincipal Long userId
+-&gt; NovelController.createNovel()
+-&gt; NovelApplicationService.createNovel()
+-&gt; MySQL novel_project(CREATING)
+-&gt; AgentSkyGatewayAdapter.create()
+-&gt; AgentSkyClient POST /api/create + X-AgentSky-Token
+-&gt; AgentSky FastAPI create_novel()
+-&gt; LangGraph supervisor -&gt; setting -&gt; character -&gt; plot -&gt; writer -&gt; reviewer -&gt; supervisor
+-&gt; AgentSky CreateResponse {success, logs, result, token_usage}
+-&gt; SprintbootSky sanitize + parse + domain complete
+-&gt; MySQL novel_project(COMPLETED) + chapter + character_profile + run_log + token_usage
+-&gt; Redis summary cache refresh
+-&gt; CreateNovelResponse
+-&gt; VueSky parseAgentLogs + normalizeNovelResult
+-&gt; Timeline / Reader / Character / Inspector</div>
+
+    <h3>跨端数据协议</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>字段</th>
+          <th>AgentSky 产生</th>
+          <th>SprintbootSky 转换</th>
+          <th>VueSky 使用</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>logs</code></td>
+          <td><code>server.py</code> 捕获 stdout 与业务日志。</td>
+          <td><code>sanitizeLogs()</code> 清洗敏感行；<code>toRunLogs()</code> 解析 agent 前缀落库。</td>
+          <td><code>parseAgentLogs()</code> -&gt; <code>AgentTimeline</code>。</td>
+        </tr>
+        <tr>
+          <td><code>result.completed_chapters</code></td>
+          <td><code>SupervisorAgent._commit_reviewed_chapter()</code> 写入已审核章节。</td>
+          <td><code>toChapters()</code> 转成领域 <code>Chapter</code> 并写入 <code>chapter</code> 表。</td>
+          <td><code>ChapterReader</code> 和已完成章节列表展示。</td>
+        </tr>
+        <tr>
+          <td><code>result.characters</code></td>
+          <td><code>CharacterAgent</code> 生成人物卡。</td>
+          <td><code>parseCharacters()</code> 转成 <code>CharacterProfile</code> 并写入 <code>character_profile</code>。</td>
+          <td><code>normalizeCharacterCard()</code> -&gt; <code>CharacterProfile.vue</code>。</td>
+        </tr>
+        <tr>
+          <td><code>result.world_settings</code></td>
+          <td><code>SettingAgent</code> 生成设定库。</td>
+          <td><code>parseWorldSettings()</code> 转成 <code>WorldSetting</code>，主表 JSON 保存。</td>
+          <td><code>ProjectNavigator</code> 世界观目录展示。</td>
+        </tr>
+        <tr>
+          <td><code>result.plot_outline</code></td>
+          <td><code>PlotAgent</code> 生成章节大纲与伏笔。</td>
+          <td><code>parsePlotOutline()</code> 转成 <code>PlotOutlineItem</code>，主表 JSON 保存。</td>
+          <td><code>ProjectNavigator</code> 大纲目录展示。</td>
+        </tr>
+        <tr>
+          <td><code>token_usage</code></td>
+          <td><code>TokenTracker.to_dict()</code> 汇总调用次数、输入输出 token、费用、模型。</td>
+          <td><code>sanitizeTokenUsage()</code> 保证非负数字和默认模型兜底，写入 <code>token_usage</code> 表。</td>
+          <td><code>RunInspector</code> 展示 Token、费用、API 调用次数。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>最终关系图</h2>
+    <pre><code>VueSky
+  App.vue
+    -&gt; useNovelRun.checkConnection()
+    -&gt; GET /api/agent/health
+    -&gt; SprintbootSky HealthController
+    -&gt; AgentSkyGateway.checkHealth()
+    -&gt; AgentSky GET /api/health
+
+VueSky
+  AgentWorkspace.vue
+    -&gt; emit("generate", idea)
+    -&gt; App.generateNovel()
+    -&gt; useNovelRun.generate()
+    -&gt; POST /api/novels
+
+SprintbootSky
+  NovelController
+    -&gt; NovelApplicationService
+    -&gt; NovelTransactionService.startCreation()
+    -&gt; MyBatisNovelProjectRepository.begin()
+    -&gt; AgentSkyGatewayAdapter
+    -&gt; AgentSkyClient
+    -&gt; POST AgentSky /api/create
+
+AgentSky
+  FastAPI create_novel()
+    -&gt; make_initial_state()
+    -&gt; create_workflow()
+    -&gt; supervisor
+    -&gt; setting
+    -&gt; supervisor
+    -&gt; character
+    -&gt; supervisor
+    -&gt; plot
+    -&gt; supervisor
+    -&gt; writer
+    -&gt; reviewer
+    -&gt; supervisor
+    -&gt; CreateResponse
+
+SprintbootSky
+  AgentSkyGatewayAdapter
+    -&gt; sanitizeLogs()
+    -&gt; parseResult()
+    -&gt; NovelProject.complete()
+    -&gt; NovelTransactionService.completeCreation()
+    -&gt; MySQL + Redis
+    -&gt; CreateNovelResponse
+
+VueSky
+  useNovelRun
+    -&gt; parseAgentLogs()
+    -&gt; normalizeNovelResult()
+    -&gt; AgentTimeline / ProjectNavigator / ChapterReader / CharacterProfile / RunInspector</code></pre>
+  </section>
+
+  <section>
+    <h2>一句话总结</h2>
+    <p class="note">
+      <code>VueSky</code> 是操作与展示层，<code>SprintbootSky</code> 是认证、事务、持久化和外部服务治理层，
+      <code>AgentSky</code> 是真正执行小说生成的多 Agent 编排层。三者通过 <code>/api</code> 代理、
+      Spring Boot REST API、AgentSky FastAPI、JWT 和 <code>X-AgentSky-Token</code> 形成一条清晰边界的创作流水线。
+    </p>
+  </section>
+</main>
+</body>
+</html>

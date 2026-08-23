@@ -1,26 +1,9 @@
-import { ref } from 'vue'
-import { normalizeNovelResult } from '../types/novel'
-import type {
-  AgentEvent,
-  AgentName,
-  NovelResult,
-  NovelRunController,
-  TokenUsage
-} from '../types/novel'
+import { computed, ref } from 'vue'
+import { ApiError, safeApiMessage } from '../api/client'
+import { createNovel, normalizeNovelResult, normalizeTokenUsage } from '../api/novels'
+import type { AgentKind, AgentLog, NovelResponse, NovelResult, NovelRunInput, RunStatus, TokenUsage } from '../types/api'
 
-interface HealthResponse {
-  status?: string
-}
-
-interface GenerateResponse {
-  success?: boolean
-  error?: string
-  logs?: string[]
-  result?: unknown
-  token_usage?: TokenUsage
-}
-
-const agentPrefixes: Array<[string, AgentName]> = [
+const agentPrefixes: Array<[string, AgentKind]> = [
   ['[SupervisorAgent]', 'supervisor'],
   ['[SettingAgent]', 'setting'],
   ['[CharacterAgent]', 'character'],
@@ -29,93 +12,84 @@ const agentPrefixes: Array<[string, AgentName]> = [
   ['[ReviewerAgent]', 'reviewer']
 ]
 
-export function parseAgentLogs(logs: string[]): AgentEvent[] {
-  return logs.map((line, index) => {
-    const prefix = agentPrefixes.find(([candidate]) => line.startsWith(candidate))
-    const [agentPrefix, agent] = prefix ?? ['', 'system']
-
+export function parseAgentLogs(lines: string[]): AgentLog[] {
+  return lines.map((line, index) => {
+    const matched = agentPrefixes.find(([prefix]) => line.startsWith(prefix))
+    const [prefix, agent] = matched ?? ['', 'system']
     return {
-      id: `event-${index + 1}`,
+      id: `agent-log-${index + 1}`,
       agent,
-      message: line.slice(agentPrefix.length).trim(),
+      message: line.slice(prefix.length).trim(),
       sequence: index + 1
     }
   })
 }
 
-export function useNovelRun(): NovelRunController {
-  const connected = ref(false)
-  const checked = ref(false)
-  const status = ref<'idle' | 'running' | 'completed' | 'failed'>('idle')
-  const events = ref<AgentEvent[]>([])
+interface NovelRunOptions {
+  allowFallback?: boolean
+  onUnauthorized?: () => void
+}
+
+function usageFromPayload(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return null
+  return normalizeTokenUsage((payload as NovelResponse).token_usage)
+}
+
+export function useNovelRun(options: NovelRunOptions = {}) {
+  const status = ref<RunStatus>('idle')
   const result = ref<NovelResult | null>(null)
+  const logs = ref<AgentLog[]>([])
   const tokenUsage = ref<TokenUsage | null>(null)
-  const elapsedSeconds = ref(0)
   const error = ref('')
-  let elapsedTimer: ReturnType<typeof setInterval> | undefined
+  const loading = computed(() => status.value === 'running')
 
-  async function checkConnection() {
-    try {
-      const response = await fetch('/api/agent/health')
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-      const health: HealthResponse = await response.json()
-      connected.value = health.status === 'ok'
-      if (!connected.value) throw new Error('AgentSky 服务未就绪')
-    } catch {
-      connected.value = false
-    } finally {
-      checked.value = true
-    }
-  }
-
-  async function generate(idea: string) {
-    if (status.value === 'running') return
-
+  async function submit(input: NovelRunInput) {
+    if (loading.value) return false
     status.value = 'running'
-    error.value = ''
-    events.value = []
     result.value = null
+    logs.value = []
     tokenUsage.value = null
-    elapsedSeconds.value = 0
-    elapsedTimer = setInterval(() => {
-      elapsedSeconds.value += 1
-    }, 1000)
+    error.value = ''
 
     try {
-      const response = await fetch('/api/novels', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea: idea.trim() })
-      })
-      const payload: GenerateResponse = await response.json()
-      tokenUsage.value = payload.token_usage ?? null
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || '创作失败，请稍后重试')
+      const response = await createNovel(input, options.allowFallback)
+      tokenUsage.value = normalizeTokenUsage(response.token_usage)
+      if (!response.success) {
+        error.value = safeApiMessage(response, '创作失败，请稍后重试')
+        result.value = normalizeNovelResult(response.result)
+        logs.value = parseAgentLogs(Array.isArray(response.logs) ? response.logs : [])
+        status.value = 'failed'
+        return false
       }
-
-      events.value = parseAgentLogs(payload.logs ?? [])
-      result.value = normalizeNovelResult(payload.result)
+      result.value = normalizeNovelResult(response.result)
+      logs.value = parseAgentLogs(Array.isArray(response.logs) ? response.logs : [])
       status.value = 'completed'
+      return true
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : '创作失败，请稍后重试'
+      if (cause instanceof ApiError) {
+        tokenUsage.value = usageFromPayload(cause.payload)
+        if (cause.payload && typeof cause.payload === 'object') {
+          const response = cause.payload as NovelResponse
+          result.value = normalizeNovelResult(response.result)
+          logs.value = parseAgentLogs(Array.isArray(response.logs) ? response.logs : [])
+        }
+        error.value = cause.message
+        if (cause.status === 401) options.onUnauthorized?.()
+      } else {
+        error.value = '创作失败，请稍后重试'
+      }
       status.value = 'failed'
-    } finally {
-      if (elapsedTimer) clearInterval(elapsedTimer)
-      elapsedTimer = undefined
+      return false
     }
   }
 
-  return {
-    connected,
-    checked,
-    status,
-    events,
-    result,
-    tokenUsage,
-    elapsedSeconds,
-    error,
-    checkConnection,
-    generate
+  function clear() {
+    status.value = 'idle'
+    result.value = null
+    logs.value = []
+    tokenUsage.value = null
+    error.value = ''
   }
+
+  return { status, loading, result, logs, tokenUsage, error, submit, clear }
 }

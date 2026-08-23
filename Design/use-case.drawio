@@ -1,0 +1,29 @@
+<mxfile host="app.diagrams.net" modified="2026-08-23T00:00:00.000Z" agent="Codex" version="26.0.0">
+  <diagram id="use-case" name="用例图">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Freesky 用例图" style="text;html=1;strokeColor=none;fillColor=none;fontSize=24;fontStyle=1" vertex="1" parent="1"><mxGeometry x="520" y="40" width="260" height="40" as="geometry"/></mxCell>
+        <mxCell id="actor" value="创作者" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1"><mxGeometry x="90" y="290" width="70" height="120" as="geometry"/></mxCell>
+        <mxCell id="system" value="Freesky" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=16" vertex="1" parent="1"><mxGeometry x="260" y="120" width="760" height="470" as="geometry"/></mxCell>
+        <mxCell id="uc1" value="注册登录" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15" vertex="1" parent="system"><mxGeometry x="70" y="60" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc2" value="输入灵感" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15" vertex="1" parent="system"><mxGeometry x="300" y="60" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc3" value="生成小说" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15" vertex="1" parent="system"><mxGeometry x="530" y="60" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc4" value="查看章节" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15" vertex="1" parent="system"><mxGeometry x="70" y="210" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc5" value="查看角色" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15" vertex="1" parent="system"><mxGeometry x="300" y="210" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc6" value="查看日志" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15" vertex="1" parent="system"><mxGeometry x="530" y="210" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc7" value="查看用量" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=15" vertex="1" parent="system"><mxGeometry x="300" y="340" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="agent" value="AgentSky" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1"><mxGeometry x="1110" y="290" width="70" height="120" as="geometry"/></mxCell>
+        <mxCell id="a1" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666" edge="1" parent="1" source="actor" target="uc1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a2" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666" edge="1" parent="1" source="actor" target="uc2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a3" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666" edge="1" parent="1" source="actor" target="uc3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a4" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666" edge="1" parent="1" source="actor" target="uc4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a5" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666" edge="1" parent="1" source="actor" target="uc5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a6" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666" edge="1" parent="1" source="actor" target="uc6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a7" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666" edge="1" parent="1" source="actor" target="uc7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a8" value="调用" style="endArrow=none;html=1;rounded=0;strokeColor=#9673a6;fontSize=13" edge="1" parent="1" source="agent" target="uc3"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

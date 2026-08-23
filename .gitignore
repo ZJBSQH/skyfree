@@ -25,6 +25,11 @@ Thumbs.db
 # 日志
 *.log
 
+# Local personal notes / diagnostics
+error/
+多Agent小说平台-面试掌握手册.html
+Design/.$*.bkp
+
 # Java and Maven
 .m2/
 **/target/

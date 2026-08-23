@@ -2,6 +2,25 @@
 
 > Vue3 + Spring Boot + Python LangGraph 的多 Agent 智能小说创作平台设计。
 
+## 0. 设计图索引
+
+`.drawio` 源文件放在 `Design/`，导出的 PNG 建议放在 `Design/pirture/`。
+
+| 图 | 源文件 | 图片占位 |
+|---|---|---|
+| 系统架构图 | `system-architecture.drawio` | `pirture/system-architecture.drawio.png` |
+| 用例图 | `use-case.drawio` | `pirture/use-case.drawio.png` |
+| Agent 工作流 | `agent-workflow.drawio` | `pirture/agent-workflow.drawio.png` |
+| 生成时序图 | `novel-generation-sequence.drawio` | `pirture/novel-generation-sequence.drawio.png` |
+| DDD 分层图 | `springboot-ddd-layers.drawio` | `pirture/springboot-ddd-layers.drawio.png` |
+| 数据库 ER 图 | `er-diagram.drawio` | `pirture/er-diagram.drawio.png` |
+
+<!-- 图片占位：导出 system-architecture.drawio 后取消下一行注释 -->
+<!-- ![系统架构图](pirture/system-architecture.drawio.png) -->
+
+<!-- 图片占位：导出 use-case.drawio 后取消下一行注释 -->
+<!-- ![用例图](pirture/use-case.drawio.png) -->
+
 ## 1. 项目目标
 
 Freesky 面向小说创作者，目标是把“一句话灵感”逐步扩展为可持续创作的长篇小说项目。系统不做一次性聊天生成，而是把写作过程拆成可管理的业务流程：灵感沉淀、项目立项、蓝图生成、逐章写作、审核返工、版本归档。
@@ -31,6 +50,9 @@ flowchart TD
     AG --> RAG[FAISS + Reference 文档]
     AG --> LLM[DeepSeek / 后续多模型]
 ```
+
+<!-- 图片占位：导出 system-architecture.drawio 后取消下一行注释 -->
+<!-- ![系统架构图](pirture/system-architecture.drawio.png) -->
 
 ### 2.1 分层职责
 
@@ -68,6 +90,9 @@ sequenceDiagram
     BE-->>FE: SSE 推送进度和结果
     FE-->>User: 展示蓝图、正文和审核信息
 ```
+
+<!-- 图片占位：导出 novel-generation-sequence.drawio 后取消下一行注释 -->
+<!-- ![小说生成时序图](pirture/novel-generation-sequence.drawio.png) -->
 
 推荐把“灵感保存”和“生成任务”拆成两个动作。这样用户可以先管理灵感库，也可以从多个灵感组合创建项目。
 
@@ -132,6 +157,9 @@ flowchart TD
     RV --> SUP
 ```
 
+<!-- 图片占位：导出 agent-workflow.drawio 后取消下一行注释 -->
+<!-- ![Agent 工作流](pirture/agent-workflow.drawio.png) -->
+
 设计重点：
 
 - `supervisor` 是唯一流程决策中心。
@@ -159,6 +187,9 @@ com.freesky
 ├── task              # 生成任务、进度、结果、错误
 └── common            # 异常、响应、分页、审计字段
 ```
+
+<!-- 图片占位：导出 springboot-ddd-layers.drawio 后取消下一行注释 -->
+<!-- ![DDD 分层图](pirture/springboot-ddd-layers.drawio.png) -->
 
 ### 5.2 后端核心服务
 
@@ -319,6 +350,9 @@ CANCELED
 ## 7. 数据库设计补充
 
 现有 `Design/requirements.md` 已列出 10 张核心表。完整平台建议增加任务和版本相关表。
+
+<!-- 图片占位：导出 er-diagram.drawio 后取消下一行注释 -->
+<!-- ![数据库 ER 图](pirture/er-diagram.drawio.png) -->
 
 ### 7.1 建议新增表
 

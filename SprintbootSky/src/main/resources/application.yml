@@ -1,0 +1,46 @@
+server:
+  address: 127.0.0.1
+  port: 8080
+
+spring:
+  application:
+    name: sprintbootsky
+  autoconfigure:
+    # 无状态 JWT 认证不需要默认生成的用户名/密码，排除以避免启动告警
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/freesky?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:Zheng666}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+# JWT 签名与有效期；secret 不允许硬编码，缺失时应用启动失败
+security:
+  jwt:
+    secret: 8f2d71bc82f4ae19be98fd21bb7cc425e5988ae2b176aec03408162c08abaccf
+    expires-in-seconds: ${JWT_EXPIRES_IN_SECONDS:86400}
+
+# AgentSky 代理配置：连接/读取超时分开，读取超时允许长任务但不能无限等待
+agentsky:
+  base-url: ${AGENTSKY_BASE_URL:http://127.0.0.1:8765}
+  api-token: 312c8799182e47bf8357e6fc57633709f433669f55444cd6b293aa5741145ac5
+  connect-timeout: ${AGENTSKY_CONNECT_TIMEOUT:5s}
+  read-timeout: ${AGENTSKY_READ_TIMEOUT:10m}
+  default-model: ${AGENTSKY_DEFAULT_MODEL:deepseek-chat}

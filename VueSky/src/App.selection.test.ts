@@ -1,63 +1,29 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { NovelResult } from './types/novel'
+import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
+import { afterEach, expect, it, vi } from 'vitest'
 
-const mockedRun = vi.hoisted(() => ({ controller: undefined as unknown }))
-
-vi.mock('./composables/useNovelRun', async () => {
-  const { ref } = await import('vue')
-  const controller = {
-    connected: ref(true),
-    checked: ref(true),
-    status: ref<'idle' | 'running' | 'completed' | 'failed'>('idle'),
-    events: ref([]),
-    result: ref<NovelResult | null>(null),
-    tokenUsage: ref(null),
-    elapsedSeconds: ref(0),
-    error: ref(''),
-    checkConnection: vi.fn(),
-    generate: vi.fn()
-  }
-  mockedRun.controller = controller
-
-  return { useNovelRun: () => controller }
+afterEach(() => {
+  cleanup()
+  localStorage.clear()
+  vi.unstubAllGlobals()
 })
 
-import App from './App.vue'
+it('未登录时保留创作内容并引导用户登录或注册', async () => {
+  localStorage.clear()
+  vi.resetModules()
+  const fetchMock = vi.fn((path: string) => Promise.resolve({
+    ok: true,
+    status: 200,
+    json: async () => ({ status: 'ok', service: path.includes('agent') ? 'agentsky' : 'sprintbootsky' })
+  }))
+  vi.stubGlobal('fetch', fetchMock)
+  const App = (await import('./App.vue')).default
+  render(App)
 
-const initialResult: NovelResult = {
-  completed_chapters: ['A first chapter'],
-  characters: [],
-  world_settings: [],
-  plot_outline: [],
-  review_round: 0
-}
+  const idea = screen.getByRole('textbox', { name: '小说灵感' })
+  await fireEvent.update(idea, '被遗忘的机械神明在海底苏醒')
+  await fireEvent.click(screen.getByRole('button', { name: '开始创作' }))
 
-function controller() {
-  return mockedRun.controller as { result: { value: NovelResult | null } }
-}
-
-describe('App content selection', () => {
-  beforeEach(() => {
-    controller().result.value = initialResult
-  })
-
-  afterEach(cleanup)
-
-  it('returns to Agent workspace when a selected chapter disappears from the result', async () => {
-    render(App)
-
-    await fireEvent.click(screen.getByRole('button', { name: '第 1 章' }))
-    expect(screen.getByRole('heading', { name: '第 1 章' })).toBeTruthy()
-
-    controller().result.value = {
-      ...initialResult,
-      completed_chapters: []
-    }
-
-    await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: '创作灵感' })).toBeTruthy()
-      expect(screen.getByRole('button', { name: '智能体工作区' }).getAttribute('aria-current')).toBe('page')
-    })
-  })
+  expect(screen.getByRole('alert').textContent).toBe('请先登录或注册后再开始创作')
+  expect((idea as HTMLTextAreaElement).value).toBe('被遗忘的机械神明在海底苏醒')
+  expect(fetchMock.mock.calls.some(([path]) => path === '/api/novels')).toBe(false)
 })
